@@ -11,7 +11,7 @@ public class Player {
 	public static final int RIGHT = 3;
 	
 	public static final int MOVE_DELAY = 250; // in milliseconds
-	public static final int NUM_PHASES = 4;
+	public static final int NUM_PHASES = 5;
 	
 	public static final String DEFAULT_AVATAR = "green";
 

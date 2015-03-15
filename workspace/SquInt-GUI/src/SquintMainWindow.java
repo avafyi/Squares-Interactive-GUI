@@ -59,7 +59,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() {
 		// Initialize the player
-		player = new Player(0,0,Player.DOWN, "graying", true);	
+		player = new Player(0,0,Player.DOWN, "glasses", true);	
 		initRoom();
 		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
 		
@@ -132,7 +132,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				left_shade,	// middle row
 				left_shade,	// middle row
 				{"in_walls/14.png", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_walls/15.png", ""},	// bottom row
-				{"", "", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "in_walls/17.png", "", ""},	// bottom row
+				{"", "", "in_walls/17.png", "in_walls/18.png", "in_walls/11.png", "in_floor/5.png", "in_floor/5.png", "in_walls/10.png", "in_walls/18.png", "in_walls/17.png", "", ""},	// bottom row
 			},
 			{
 				empty_row,	// top row
@@ -148,7 +148,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				empty_row,	// middle row
 				empty_row,	// middle row
 				{"", "in_shadows/8.png", "", "", "", "", "", "", "", "", "", "", ""},	// bottom row
-				empty_row,	// bottom row
+				{"", "", "", "", "", "in_shadows/6.png", "", "", "", "", "", "", ""},	// bottom row
 			}
 		};
 		roomBackgroundImage = makeImage();
