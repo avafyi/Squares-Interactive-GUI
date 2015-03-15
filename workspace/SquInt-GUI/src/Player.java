@@ -1,4 +1,5 @@
-import java.awt.Color;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -10,16 +11,20 @@ public class Player {
 	public static final int RIGHT = 3;
 	
 	public static final int MOVE_DELAY = 250; // in milliseconds
+	
+	public static final String DEFAULT_AVATAR = "vader";
 
 	// Player attributes
-	public static Color PLAYER_COLOR = Color.YELLOW;   
 	public int x; 						// the x location of the player using tile coordinates
 	public int y;						// the y location of the player using tile coordinates
 	public int direction;
+	public String avatar = null;
 	public boolean allowedToMove;
 	private Timer moveTimer = null;
 	
-	public Player(int tile_x, int tile_y, int direction, boolean canIMove) {
+	private List<String> avatars = Arrays.asList("vader");
+	
+	public Player(int tile_x, int tile_y, int direction, String avatar, boolean canIMove) {
 		if (tile_x < 0 || tile_x > SquintMainWindow.TILES_DIM) {
 			x = 0;
 		} else {
@@ -35,6 +40,12 @@ public class Player {
 		} else {
 			this.direction = direction;			
 		}
+		if (avatars.contains(avatar)) {
+			this.avatar = avatar;
+		} else {
+			this.avatar = DEFAULT_AVATAR;
+		}
+		
 		allowedToMove = canIMove;
 	}
 	
