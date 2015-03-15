@@ -1,0 +1,20 @@
+import java.awt.Color;
+
+public class Player {
+
+	public static final int DOWN = 3;
+	public static final int UP = 1;
+	public static final int RIGHT = 0;
+	public static final int LEFT = 2;
+
+	// Player attributes
+	public static Color PLAYER_COLOR = Color.YELLOW;   
+	public static int player_x = 2; 						// the x location of the player using tile coordinates
+	public static int player_y = 3;						// the y location of the player using tile coordinates
+	public static int PLAYER_DIRECTION = DOWN;
+	
+	public Player() {
+		// TODO Auto-generated constructor stub
+	}
+
+}
