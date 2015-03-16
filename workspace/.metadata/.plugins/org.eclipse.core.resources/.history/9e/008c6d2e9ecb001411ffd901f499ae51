@@ -58,7 +58,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	private Player[] ai_players = null;				// The list of dummies (it will be resized if there are too many requested players)
 	private Timer autoMoveTimer = null;
 	private static final int NUM_AI_PLAYERS = 100;	// The number of dummies you want
-	public static final int AI_MOVE_DELAY = 1000; 	// in milliseconds (used to slow down or speed up the dummies' movements)
+	public static final int AI_MOVE_DELAY = 10; 	// in milliseconds (used to slow down or speed up the dummies' movements)
 	
 	// PLAYER
 	public Player player = null;
@@ -607,11 +607,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        	movePlayer(Player.LEFT, player);
 	        } else if(e.getKeyCode()== KeyEvent.VK_S || e.getKeyCode()== KeyEvent.VK_DOWN) {
 	        	movePlayer(Player.DOWN, player);
-	        } else if(e.getKeyCode()== KeyEvent.VK_Q) {
-	        	int modVal = Player.RIGHT + 1;
-	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
-	        } else if(e.getKeyCode()== KeyEvent.VK_E) {
-	        	player.direction = (player.direction + 1) % (Player.RIGHT + 1);
 	        }
 	        repaint();
 		}

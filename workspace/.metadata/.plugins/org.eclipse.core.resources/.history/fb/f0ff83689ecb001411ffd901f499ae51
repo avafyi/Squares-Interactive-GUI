@@ -608,10 +608,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        } else if(e.getKeyCode()== KeyEvent.VK_S || e.getKeyCode()== KeyEvent.VK_DOWN) {
 	        	movePlayer(Player.DOWN, player);
 	        } else if(e.getKeyCode()== KeyEvent.VK_Q) {
-	        	int modVal = Player.RIGHT + 1;
-	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
+	        	movePlayer(Player.SPIN_CC, player);
 	        } else if(e.getKeyCode()== KeyEvent.VK_E) {
-	        	player.direction = (player.direction + 1) % (Player.RIGHT + 1);
+	        	movePlayer(Player.DOWN, player);
 	        }
 	        repaint();
 		}
