@@ -15,8 +15,6 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
@@ -40,7 +38,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 
 	public static final String AVATAR_SUBDIR = "avatars/re/";
 	public static final String IMAGES_DIR = "res/images/";
-	public static final List<String> SOLIDS = Arrays.asList("wall");
 	
 	// Name-constants (DIM stands for Dimension)
 //	public static final int ROOM_WIDTH = 400;			// The pixel width of the roomSquaresImageURLs
@@ -66,13 +63,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	// PLAYER
 	public Player player = null;
 	public int num_players = 0;
-	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
 	
 	// ANIMATION 
-	public static final int ANIMATION_DELAY = 250;	// in milliseconds
-//	public static final int ANIMATION_DELAY_SPRINTING = 250;	// in milliseconds
+	public static final int ANIMATION_DELAY = 500; // in milliseconds
 	public static final int ANIMATION_DELAY_STEP = ANIMATION_DELAY / Player.NUM_PHASES; // in milliseconds
-//	public static final int ANIMATION_DELAY_RUN = ANIMATION_DELAY_SPRINTING / Player.NUM_PHASES; // in milliseconds
 	private boolean phaseComplete = false;	// whether the animation phase has completed	
 	Hashtable<Integer, ScheduledExecutorService> executors = new Hashtable<Integer, ScheduledExecutorService>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
 
@@ -229,13 +223,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				}
 				findSolidsLoop:
 				for (String[][] layer : roomSquaresImageURLs) {
-					boolean isSolid = false;
-					for(String solid : SOLIDS) {
-						if (layer[row][col].contains(solid)) {	
-							isSolid = true;
-						}
-					}
-					if (isSolid) {		
+					if (layer[row][col].contains("wall")) {		
 						File imageSrc = new File(IMAGES_DIR + layer[row][col]);					
 						BufferedImage bimg = null;
 						try {
@@ -467,18 +455,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 
 	class Animation extends TimerTask{
 		private Player p = null;
-		private int speedToggle;
-		
 		public Animation(Player p) {
 			this.p = p;
-			speedToggle = p.speed;
 		}
 		public void run() {
-			// If the player is walking, the animation will occur every other run()
-			if (--speedToggle <= 0) { 
-				speedToggle = p.speed;	// Update the speed of the player in case they started sprinting during the animation
-				animatePlayer(p);
-			}
+			// Invoke method(s) to do the work
+			animatePlayer(p);
 		}
 	}
 	
@@ -605,7 +587,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				JFrame frame = new JFrame(TITLE);
 				frame.setContentPane(new SquintMainWindow());
 				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.setResizable(false);
+//				frame.setResizable(false);
 				frame.pack();             // "this" JFrame packs its components
 				frame.setLocationRelativeTo(null); // center the application window
 				frame.setVisible(true);            // show it
@@ -616,37 +598,28 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (AI_MODE) return;
-		if (!heldKeys.contains(e.getKeyCode())) {
-			heldKeys.add(new Integer(e.getKeyCode()));		
-		}
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
-    		player.speed = Player.RUNNING;			
-		}
-    	if (player.allowedToMove) {
-	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
+		if (player.allowedToMove) {
+	        if(e.getKeyCode()== KeyEvent.VK_D || e.getKeyCode()== KeyEvent.VK_RIGHT) {
 	        	movePlayer(Player.RIGHT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
+	        } else if(e.getKeyCode()== KeyEvent.VK_W || e.getKeyCode()== KeyEvent.VK_UP) {
 	        	movePlayer(Player.UP, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
+	        } else if(e.getKeyCode()== KeyEvent.VK_A || e.getKeyCode()== KeyEvent.VK_LEFT) {
 	        	movePlayer(Player.LEFT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
+	        } else if(e.getKeyCode()== KeyEvent.VK_S || e.getKeyCode()== KeyEvent.VK_DOWN) {
 	        	movePlayer(Player.DOWN, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
+	        } else if(e.getKeyCode()== KeyEvent.VK_Q) {
 	        	int modVal = Player.RIGHT + 1;
 	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
-	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
+	        } else if(e.getKeyCode()== KeyEvent.VK_E) {
 	        	player.direction = (player.direction + 1) % (Player.RIGHT + 1);
 	        }
 	        repaint();
 		}
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		heldKeys.remove(new Integer(e.getKeyCode()));
-    	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
-    		player.speed = Player.WALKING;
-    	}
 //        System.out.println("keyReleased");
 	}
 

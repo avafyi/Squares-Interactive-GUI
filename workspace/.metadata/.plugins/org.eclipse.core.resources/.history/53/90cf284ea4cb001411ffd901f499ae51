@@ -66,7 +66,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	// PLAYER
 	public Player player = null;
 	public int num_players = 0;
-	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
+	public List<KeyEvent> heldKeys = new ArrayList<KeyEvent>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
 	
 	// ANIMATION 
 	public static final int ANIMATION_DELAY = 250;	// in milliseconds
@@ -616,10 +616,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (AI_MODE) return;
-		if (!heldKeys.contains(e.getKeyCode())) {
-			heldKeys.add(new Integer(e.getKeyCode()));		
-		}
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+		heldKeys.add(e);
+		if (heldKeys.contains(KeyEvent.VK_SHIFT)) {
     		player.speed = Player.RUNNING;			
 		}
     	if (player.allowedToMove) {
@@ -639,11 +637,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        }
 	        repaint();
 		}
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		heldKeys.remove(new Integer(e.getKeyCode()));
+		heldKeys.remove(e);
     	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
     		player.speed = Player.WALKING;
     	}

@@ -66,7 +66,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	// PLAYER
 	public Player player = null;
 	public int num_players = 0;
-	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
+	public List<KeyEvent> heldKeys = new ArrayList<KeyEvent>();
 	
 	// ANIMATION 
 	public static final int ANIMATION_DELAY = 250;	// in milliseconds
@@ -616,34 +616,31 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (AI_MODE) return;
-		if (!heldKeys.contains(e.getKeyCode())) {
-			heldKeys.add(new Integer(e.getKeyCode()));		
-		}
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
-    		player.speed = Player.RUNNING;			
-		}
+    	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
+    		player.speed = Player.RUNNING;
+    	} 
     	if (player.allowedToMove) {
-	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
+	        if(e.getKeyCode() == KeyEvent.VK_D || e.getKeyCode() == KeyEvent.VK_RIGHT) {
 	        	movePlayer(Player.RIGHT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
+	        } else if(e.getKeyCode() == KeyEvent.VK_W || e.getKeyCode() == KeyEvent.VK_UP) {
 	        	movePlayer(Player.UP, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
+	        } else if(e.getKeyCode() == KeyEvent.VK_A || e.getKeyCode() == KeyEvent.VK_LEFT) {
 	        	movePlayer(Player.LEFT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
+	        } else if(e.getKeyCode() == KeyEvent.VK_S || e.getKeyCode() == KeyEvent.VK_DOWN) {
 	        	movePlayer(Player.DOWN, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
+	        } else if(e.getKeyCode() == KeyEvent.VK_Q) {
 	        	int modVal = Player.RIGHT + 1;
 	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
-	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
+	        } else if(e.getKeyCode() == KeyEvent.VK_E) {
 	        	player.direction = (player.direction + 1) % (Player.RIGHT + 1);
 	        }
 	        repaint();
 		}
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		heldKeys.remove(new Integer(e.getKeyCode()));
     	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
     		player.speed = Player.WALKING;
     	}

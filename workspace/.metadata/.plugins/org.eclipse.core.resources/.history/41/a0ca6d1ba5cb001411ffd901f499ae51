@@ -639,6 +639,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        }
 	        repaint();
 		}
+        System.out.println("keyPressed");
 	}
 
 	@Override

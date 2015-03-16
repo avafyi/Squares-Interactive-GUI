@@ -639,11 +639,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        }
 	        repaint();
 		}
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		heldKeys.remove(new Integer(e.getKeyCode()));
+		heldKeys.remove(e.getKeyCode());
     	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
     		player.speed = Player.WALKING;
     	}

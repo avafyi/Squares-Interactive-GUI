@@ -616,9 +616,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (AI_MODE) return;
-		if (!heldKeys.contains(e.getKeyCode())) {
-			heldKeys.add(new Integer(e.getKeyCode()));		
-		}
+		heldKeys.add(e.getKeyCode());
 		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
     		player.speed = Player.RUNNING;			
 		}
@@ -639,11 +637,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        }
 	        repaint();
 		}
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		heldKeys.remove(new Integer(e.getKeyCode()));
+		heldKeys.remove(e.getKeyCode());
     	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
     		player.speed = Player.WALKING;
     	}

@@ -16,9 +16,6 @@ public class Player {
 	public static final int MOVE_DELAY = 250; // in milliseconds
 	public static final int NUM_PHASES = 5;
 	
-	public static final int WALKING = 2;
-	public static final int RUNNING = 1;
-	
 	public static final String DEFAULT_AVATAR = "green";
 
 	// Player attributes
@@ -30,7 +27,6 @@ public class Player {
 	public int animatePhase;
 	private Timer moveTimer = null;
 	public int playerIdx;
-	public int speed;
 	
 	public static List<String> avatars = Arrays.asList(
 			"blond", "blond_spiky", "blonde_blue", "blonde_hairband", "blue", 
@@ -79,8 +75,7 @@ public class Player {
 			this.avatar = DEFAULT_AVATAR;
 		}
 		animatePhase = 0;
-		speed = WALKING;
-		playerIdx = idx;		
+		playerIdx = idx;
 		allowedToMove = canIMove;
 	}
 	
