@@ -15,8 +15,8 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -46,19 +46,19 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int CANVAS_HEIGHT = 560;		// the pixel height of the application window
 //	public static final int LEFT_WALL_OFFSET = 40;
 //	public static final int TOP_WALL_OFFSET = 120;
-//	public static final int NUM_TILES_ACROSS = 10;		// the number of tiles (squares) in a row or column
+//	public static final int NUM_TILES_ACROSS = 10;						// the number of tiles (squares) in a row or column
 //	public static final int NUM_TILES_DOWN = 10;
-	public static final int MAP_DIM = 40;				// the number of pixels per grid square
-//	public static final int TILE_DIM = MAP_DIM;			// the number of pixels per tile
-	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
-	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
+	public static final int MAP_DIM = 40;					// the number of pixels per grid square
+//	public static final int TILE_DIM = MAP_DIM;				// the number of pixels per tile
+	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;
+	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;	
 	
-	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
-	private final boolean AI_MODE = false;			// Set this to make some dummies
-	private Player[] ai_players = null;				// The list of dummies (it will be resized if there are too many requested players)
+	// AI - NOT FULLY IMPLEMENTED
+	private final boolean AI_MODE = true;			// Set this to true and watch the dummies move
+	private Player[] ai_players = null;
 	private Timer autoMoveTimer = null;
-	private static final int NUM_AI_PLAYERS = 103;	// The number of dummies you want
-	public static final int AI_MOVE_DELAY = 10; 	// in milliseconds (used to slow down or speed up the dummies' movements)
+	private static final int NUM_AI_PLAYERS = 4;
+	public static final int AI_MOVE_DELAY = 1000; // in milliseconds
 	
 	// PLAYER
 	public Player player = null;
@@ -67,8 +67,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	// ANIMATION 
 	public static final int ANIMATION_DELAY = 500; // in milliseconds
 	public static final int ANIMATION_DELAY_STEP = ANIMATION_DELAY / Player.NUM_PHASES; // in milliseconds
-	private boolean phaseComplete = false;	// whether the animation phase has completed	
-	Hashtable<Integer, ScheduledExecutorService> executors = new Hashtable<Integer, ScheduledExecutorService>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
+	private boolean phaseComplete = false;	
+	List<ScheduledExecutorService> executors = new ArrayList<ScheduledExecutorService>();
 
 	// MAP / LEVEL / ROOM
 	private String[][][] roomSquaresImageURLs = null;
@@ -89,29 +89,15 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			ai_players = new Player[NUM_AI_PLAYERS];
 			List<String> avatars = Player.avatars;	// Gather the list of available avatars
 			Collections.shuffle(avatars);			// Shuffle the list for randomization
-			// Go through and create the specified number of players
-			for (int ai = 0; ai < NUM_AI_PLAYERS; ai++) {
-				// Each player is created in a random available location, 
-				// has a unique avatar (unless more AI are requested that exist avatars), 
-				// is facing a random direction, and is able to move
-				ai_players[ai] = new Player(mapSquares, (int)(Math.random()*4), avatars.get(ai % avatars.size()), true, ++num_players);
-				// in the case that there was no more room for players, the player would have a null avatar
-				// if the player was not successfully created, then too many AI players were requested and
-				// the array of ai_players should be resized, and the loop exited
-				if (ai_players[ai].avatar == null) {
-					Player[] newAI_players = new Player[ai];
-					System.arraycopy(ai_players, 0, newAI_players, 0, ai);
-					ai_players = newAI_players;
-					break;
-				}
+			// Go through and create the specified number of players up to but not exceeding the total number of unique avatars
+			for (int ai = 0; ai < NUM_AI_PLAYERS && ai < avatars.size(); ai++) {
+				ai_players[ai] = new Player(mapSquares, (int)(Math.random()*4), avatars.get(ai), true, ++num_players);		
 				updateMap(mapSquares, ai_players[ai], true);					
 			}
-			// Configure a timer to automatically move the AI players
 			autoMoveTimer = new Timer();
 			autoMoveTimer.scheduleAtFixedRate(new TimerTask() {
 				@Override
 				public void run() {
-					// Go through all ai players and make them move in a random direction
 					for(Player p : ai_players) {
 						if (p.allowedToMove) {
 							movePlayer((int)(Math.random()*4), p);	
@@ -124,7 +110,19 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			// Create a new player and update the map to indicate their location
 			player = new Player(mapSquares, Player.DOWN, "glasses", true, ++num_players);
 			updateMap(mapSquares, player, true);			
-		}		
+		}
+		
+		// "this" JPanel container sets layout
+		// setLayout(new ....Layout());
+
+		// Allocate the UI components
+		// .....
+
+		// "this" JPanel adds components
+		// add(....)
+
+		// Source object adds listener
+		// .....
 	}
 	
 	private void initRoom() {
@@ -429,9 +427,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 
 	private void drawPlayer(Player p, Graphics g) {	
-		if (p == null) {
-			return;
-		}
+
 		int player_x = p.x * MAP_DIM;// + LEFT_WALL_OFFSET;
 		int player_y = p.y * MAP_DIM;// + TOP_WALL_OFFSET;	
 
@@ -465,9 +461,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	public void animatePlayer(Player p) {	
-		if (p == null) {
-			return;
-		}
 		boolean endPhases = false;
 		if (p.animatePhase >= Player.NUM_PHASES) {
 			endPhases = true;
@@ -495,7 +488,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			
 			p.animatePhase = 0;	// Reset to default of no animation			
 			p.allowedToMove = true; // Let the player move again now that the animation is complete
-			executors.get(p.playerIdx).shutdown();
+			executor.shutdown();
 			repaint();			
 		}
 	}
@@ -508,9 +501,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * @param occupied	Whether or not the player's position is being occupied or reset to not occupied
 	 */
 	private void updateMap(MapSquare[][] map, Player p, boolean occupied) {
-		if (p == null) {
-			return;
-		}
 		if (occupied) {
 			map[p.y][p.x].isOccupied = true;
 			map[p.y][p.x].playerIdx = p.playerIdx;
@@ -572,8 +562,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		if (animate) {
 			p.allowedToMove = false;
 			p.animatePhase = 1;	// Start the animation	
-		    executors.put(p.playerIdx, Executors.newSingleThreadScheduledExecutor());
-		    executors.get(p.playerIdx).scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);		
+		    executors.add(Executors.newSingleThreadScheduledExecutor());
+			executor.scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);		
 		} else {
 			p.allowedToMove = true;
 		}

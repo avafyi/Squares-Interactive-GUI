@@ -46,15 +46,15 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int CANVAS_HEIGHT = 560;		// the pixel height of the application window
 //	public static final int LEFT_WALL_OFFSET = 40;
 //	public static final int TOP_WALL_OFFSET = 120;
-//	public static final int NUM_TILES_ACROSS = 10;		// the number of tiles (squares) in a row or column
+//	public static final int NUM_TILES_ACROSS = 10;						// the number of tiles (squares) in a row or column
 //	public static final int NUM_TILES_DOWN = 10;
-	public static final int MAP_DIM = 40;				// the number of pixels per grid square
-//	public static final int TILE_DIM = MAP_DIM;			// the number of pixels per tile
-	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
-	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
+	public static final int MAP_DIM = 40;					// the number of pixels per grid square
+//	public static final int TILE_DIM = MAP_DIM;				// the number of pixels per tile
+	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;
+	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;	
 	
-	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
-	private final boolean AI_MODE = false;			// Set this to make some dummies
+	// AI
+	private final boolean AI_MODE = true;			// Set this to make some dummies
 	private Player[] ai_players = null;				// The list of dummies (it will be resized if there are too many requested players)
 	private Timer autoMoveTimer = null;
 	private static final int NUM_AI_PLAYERS = 103;	// The number of dummies you want

@@ -28,8 +28,8 @@ public class Player {
 	
 	public static List<String> avatars = Arrays.asList(
 			"blond", "blond_spiky", "blonde_blue", "blonde_hairband", "blue", 
-			"brown", "brown_green", "brown_mustache", "brown_ponytail", "dark_knight", 
-			"glasses", "graying", "green", "pirate", 
+			"brown", "brown_green", "brown_mustache", "ponytail", "dark_knight", 
+			"glasses", "graying", "green", "pink", "pirate", 
 			"purple", "red_mustache", "strawberry");
 	
 	public Player(MapSquare[][] sq, int direction, String avatar, boolean canIMove, int idx) {
