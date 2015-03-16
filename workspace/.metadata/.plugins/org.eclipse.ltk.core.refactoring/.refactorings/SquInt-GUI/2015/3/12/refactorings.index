@@ -26,3 +26,9 @@
 1426414520948	Rename field 'roomCoords'
 1426414532449	Rename field 'room'
 1426415518485	Delete elements
+1426467868915	Rename field 'roomSquares'
+1426468294216	Rename field 'AVATAR_SUBFOLDER'
+1426468301804	Rename field 'AVATAR_DIR'
+1426473487188	Rename field 'IS_AI'
+1426474638139	Rename method 'animatePLayer'
+1426475600505	Rename field 'CANVAS_DIM'

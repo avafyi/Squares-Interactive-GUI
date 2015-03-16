@@ -1,4 +1,5 @@
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -23,24 +24,44 @@ public class Player {
 	public boolean allowedToMove;
 	public int animatePhase;
 	private Timer moveTimer = null;
+	public int playerIdx;
 	
-	private List<String> avatars = Arrays.asList(
+	public static List<String> avatars = Arrays.asList(
 			"blond", "blond_spiky", "blonde_blue", "blonde_hairband", "blue", 
 			"brown", "brown_green", "brown_mustache", "ponytail", "dark_knight", 
 			"glasses", "graying", "green", "pink", "pirate", 
 			"purple", "red_mustache", "strawberry");
 	
-	public Player(int tile_x, int tile_y, int direction, String avatar, boolean canIMove) {
-		if (tile_x < 0 || tile_x > SquintMainWindow.NUM_TILES_ACROSS) {
-			x = 0;
-		} else {
-			x = tile_x;
+	public Player(MapSquare[][] sq, int direction, String avatar, boolean canIMove, int idx) {
+		// Pick a pseudorandom location to place the player based on the given map
+		Integer[] numRows = new Integer[sq.length];
+		for (int i = 0; i < numRows.length; i++) {
+			numRows[i] = i;
 		}
-		if (tile_y < 0 || tile_y > SquintMainWindow.NUM_TILES_DOWN) {
-			y = 0;
-		} else {
-			y = tile_y;
+		Collections.shuffle(Arrays.asList(numRows));	// Get a random ordering of valid rows
+		boolean foundSpot = false;
+		// Go through each row until we find a row with an open spot for a player
+		findSpotLoop:
+		for (int row : numRows) {
+			Integer[] numCols = new Integer[sq[row].length];
+			for (int i = 0; i < numCols.length; i++) {
+				numCols[i] = i;
+			}
+			Collections.shuffle(Arrays.asList(numCols));	// Get a random ordering of valid rows
+			for (int col : numCols) {
+				if (sq[row][col].playerIdx != -1 && sq[row][col].isOccupied == false) {
+					foundSpot = true;
+					x = col;
+					y = row;
+					break findSpotLoop;
+				}
+			}
 		}
+		if (!foundSpot) {
+			System.out.println("No room for the player");
+			return;
+		}
+
 		if (direction < RIGHT || direction > DOWN) {
 			this.direction = DOWN;
 		} else {
@@ -52,6 +73,7 @@ public class Player {
 			this.avatar = DEFAULT_AVATAR;
 		}
 		animatePhase = 0;
+		playerIdx = idx;
 		allowedToMove = canIMove;
 	}
 	
