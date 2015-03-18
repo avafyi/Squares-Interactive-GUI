@@ -46,7 +46,47 @@ mode is still kept in use, they will not be spawned out of bounds.
 
 */
 
+	public static final String IMG_EXT = ".png";
+	public static enum FloorType { wood, pave, grass};
+	public static String[] floorPaths = new String[] {"in_floor/", "out_pave/", "out_grass/"};
+	public static Hashtable<FloorType, String> floorHash = new Hashtable<FloorType, String>();
+	
+	private void initFlooring() {
+		int idx = 0;
+		// Populate the hashtable pairing floortypes to their paths
+		for(FloorType ft : FloorType.values()) {
+			if (floorPaths[idx] != null) {
+				floorHash.put(ft, floorPaths[idx++]);				
+			} else {
+				// Undefined floor type
+				return;
+			}
+		}
+	}
+	
+	// This can apply for both wood flooring or pavement or grass as supported by available textures
+	// Return a generated array? Or merge with a parameter-provided array?
+	// 4 1 5 5
+	// if randSeed == 0 			all clean
+	// if randSeed >= 1 && <= 3 	clean variations
+	// if randSeed >= 4 && <= 10	clean mixed with clean variations mixed with unique boards (higher the value, the more unique) 
+	private void generateFloor(String[][] map, int sRow, int sCol, int eRow, int eCol, FloorType type, int randSeed) {
+		// add in some code so that we get certain floor images based on the randSeed variable
+		// use Math.random with some form of scaling so that if randSeed is say, 10 then we have a huge chance
+		// of getting unique boards and a much lower change of the normal, clean variations
+		
+		
+		String floorDir = floorHash.get(type);
+		while(sRow <= eRow) {
+			while(sCol <= eCol) {				
+				map[sRow][sCol++] = floorDir + IMG_EXT;	// 
+			}
+			sRow++;
+		}
+	}
+	
 
+	--------------------------------------------
 	
 	// Map 
 	public static final int IN = 0;		// a level
