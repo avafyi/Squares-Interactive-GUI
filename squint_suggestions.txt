@@ -32,6 +32,17 @@ window array and then go to the original created map array with all the layers a
 current furthest left col from the view window. Then shift the entire view window array soi that the col you just got is the 
 new far left and everything else SATs the same in the array hut is shifted to the right by one column.
 
+Make sure that map generation can happen semi-dynamically for varying window sizes. Include an option for default map location 
+so that the user specified map (i.e. everything that isn't a transparent.png) can be positioned at different places in the window
+like centered, or top center, or top left, or top right, or right centered or bottom right or bottom centered or bottom left
+or left centered. This way if the size of the map gets expanded but the actual images are not changed, it will fill in transparent
+images in the extra space that has not been specified based on location. Like if it is centered, pad the top rows, bottom rows, left 
+columns, and right columns evenly s.t. num_top_rows_padded = num_bot_rows_padded and num_left_cols_padded = num_right_cols_padded
+With this implemented, when the player camera gets implemented it will be easy to pad "darkness" i.e. un-rendered map areas around
+all sides of the map. For an outside scenario, this padding could be cliffs or fences with grass beyond the fences. This would
+be quite a bit more complex as the "out-of-bounds" area will have to have fencing with a grass layer beneath it before padding
+grass or pavemenet or whatever beyond the fenceline. Also be sure to make this special out-of-bounds area SOLID so that if AI
+mode is still kept in use, they will not be spawned out of bounds.
 
 */
 
