@@ -32,3 +32,5 @@
 1426473487188	Rename field 'IS_AI'
 1426474638139	Rename method 'animatePLayer'
 1426475600505	Rename field 'CANVAS_DIM'
+1426489938863	Delete element
+1426716332734	Rename field 'executors'

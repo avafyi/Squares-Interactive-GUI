@@ -16,8 +16,8 @@
 	<section name="JavaElementSearchActions">
 	</section>
 	<section name="RefactoringWizard.preview">
-		<item value="365" key="height"/>
-		<item value="530" key="width"/>
+		<item value="355" key="height"/>
+		<item value="520" key="width"/>
 	</section>
 	<section name="NewClassWizardPage">
 		<item value="true" key="create_constructor"/>

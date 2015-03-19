@@ -13,16 +13,16 @@
 		<item value="false" key="isRegEx"/>
 		<item value="false" key="incremental"/>
 		<item value="false" key="wholeword"/>
-		<item value="Player p" key="selection"/>
+		<item value="level" key="selection"/>
 		<list key="findhistory">
-			<item value="Player p"/>
-			<item value="NUM_AI_PLAYERS"/>
-			<item value="class ani"/>
-			<item value="animate"/>
-			<item value="math.ran"/>
-			<item value="keypres"/>
-			<item value="moveplayer"/>
-			<item value="Timer"/>
+			<item value="level"/>
+			<item value="inito"/>
+			<item value="SOLIDS"/>
+			<item value="NUM_SQUARES_ACROSS"/>
+			<item value="CANVAS_WIDTH"/>
+			<item value="outsideBackgroundImage"/>
+			<item value="currentMap"/>
+			<item value="drawback"/>
 		</list>
 		<list key="replacehistory">
 			<item value="p."/>
