@@ -79,33 +79,33 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	private boolean phaseComplete = false;	// whether the animation phase has completed	
 	Hashtable<Integer, ScheduledExecutorService> animationExecutors = new Hashtable<Integer, ScheduledExecutorService>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
 
-	// General Map variables
+	// General Level variables
 	private int currentMap = IN;
 	public static final int MAP_DIM = 40;				// the number of pixels per grid square
 	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
 	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
-//	private static enum Map { interior, exterior };
+	private static enum Level { interior, exterior };
 	
-	// Inside Map
+	// Inside Level
 	private String[][][] roomSquaresImageURLs = null;
 	private Point[][] roomSquaresCoords = null;
 	private BufferedImage roomBackgroundImage = null;
 	private MapSquare[][] mapSquares = null;
-	public static final int IN = 0;	// Map ID number
+	public static final int IN = 0;	// Level ID number
 	
-	// Outside Map
+	// Outside Level
 //	private String[][][] outsideSquaresImageURLs = null;
 //	private Point[][] outsideSquaresCoords = null;
 //	private BufferedImage outsideBackgroundImage = null;
 //	private MapSquare[][] outsideSquares = null;
 //	public static final int OUT_SQUARES_ACROSS = 20;	// The logical width of the map
 //	public static final int OUT_SQUARES_DOWN = 15;		// The logical height of the map
-//	public static final int OUT = 1;	// Map number
+//	public static final int OUT = 1;	// Level number
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
 	{
-		Map map = new Map(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
+//		Level level = new Level(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
 		initRoom();
 //		initOutside();
 		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
@@ -346,7 +346,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);  // paint background
-		drawMap(g, Map.interior);
+		drawMap(g, Level.interior);
 		Graphics2D g2d = (Graphics2D) g;
 		drawAvatars((Graphics2D) g, AI_MODE);
 	}
@@ -355,10 +355,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * Updates the application window to display the active map static background
 	 * 
 	 * @param g		the graphics object
-	 * @param map	the map to be drawn
+	 * @param level	the map to be drawn
 	 */
-	private void drawMap(Graphics g, Map map) {
-		switch (map) {
+	private void drawMap(Graphics g, Level level) {
+		switch (level) {
 			case interior:
 				// Ensure that a static background image has been generated for the map
 				if (roomBackgroundImage != null) {
