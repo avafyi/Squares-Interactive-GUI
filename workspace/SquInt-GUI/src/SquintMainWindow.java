@@ -84,7 +84,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int MAP_DIM = 40;				// the number of pixels per grid square
 	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
 	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
-	private static enum Map { interior, exterior };
+//	private static enum Map { interior, exterior };
 	
 	// Inside Map
 	private String[][][] roomSquaresImageURLs = null;
@@ -105,6 +105,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
 	{
+		Map map = new Map(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
 		initRoom();
 //		initOutside();
 		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
@@ -328,6 +329,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}	
 		roomBackgroundImage = makeImage(roomSquaresImageURLs, roomSquaresCoords);
 	}
+	
 	public BufferedImage makeImage(String[][][] imageURLs, Point[][] coords) {
 		BufferedImage bImg = new BufferedImage(CANVAS_WIDTH, CANVAS_HEIGHT, 
 				BufferedImage.TYPE_INT_ARGB);
@@ -434,6 +436,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Failed to read image file");
+//			Texture path = new Texture();
+			System.out.println(new Texture.Images.House.Floor());
 		}
 		if (img == null) {
 			return;
