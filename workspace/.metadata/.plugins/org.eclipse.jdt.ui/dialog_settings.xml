@@ -2,8 +2,8 @@
 <section name="Workbench">
 	<item value="filter_imports;" key="filters_last_used"/>
 	<section name="RefactoringWizard.preview">
-		<item value="540" key="width"/>
-		<item value="375" key="height"/>
+		<item value="530" key="width"/>
+		<item value="365" key="height"/>
 	</section>
 	<section name="org.eclipse.ltk.ui.refactoring.settings">
 		<item value="true" key="updateSimilarElements"/>
