@@ -3,8 +3,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -23,157 +21,177 @@ import org.w3c.dom.Node;
 
 public class DirectoryXMLMapping{	
 	
+	// XML specific vars
 	private static Document doc = null;
 	private static Element root	= null;
-	private static Element prevElement = null;
-	private static Element nextElement = null;
-	private static final Boolean operate = true; 
-	private static final Boolean useThreading = false;	// this makes it a lot slower in my tests
+	
+	// Runtime configuration options
+	private static final String rootDir = "res\\";
+	private static final Boolean outputToDocument = false; 
 	private static final Boolean timeProgram = true;
+	
+	// Debugging variables
+	private static final Boolean verbose_mode = false;
+	private static int fileCount = 0;
 	public static long startTime = 0;
-	private static final Pattern lastIntPattern = Pattern.compile("[^0-9]+(([0-9]+)[)]?)$");
+	
 
 	public static void main(String[] args) 
-	{
-//		String rootDir = "C:\\users\\piekstra17\\";
-		String rootDir = "res\\";
-		System.out.println(rootDir);
+	{		
+		// Set up a document
 		try {	
 			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-			doc = docBuilder.newDocument();			
-
+			doc = docBuilder.newDocument();		
 		} catch (ParserConfigurationException pce) {
 			pce.printStackTrace();
-		}
-
-		
+		}		
 		
 		if (timeProgram) {
+			// Start a timer to time the program runtime
 			startTime = System.currentTimeMillis();
 		}
 		
+		// Map the directories if we have a doc
 		if (doc != null) {
 			mapDirectories(rootDir);			
-		}
-		
+		}		
 
+		// Keep track of when the program ends so we can do some end-of-the-line methods / output
 	    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
 	        public void run() {
 	    		if (timeProgram) {
-	    			final long endTime = System.currentTimeMillis();
-	    			System.out.println("Total execution time: " + (endTime - startTime) );
+	    			long endTime = System.currentTimeMillis();
+	    			// Print the runtime of the program
+	    			System.out.println("Total execution time: " + (endTime - startTime) + " ms");
+	    			// Print out the number of files and directories (folders) encountered
+	    			System.out.println("Files and folder processed: " + fileCount);
 	    		}
 	        }
 	    }, "Shutdown-thread"));
-		if (operate) {
-			printDocumentToConsole(doc, System.out);	
+	    
+		if (outputToDocument) {
+			// Print the XML document out to the console
+			if (verbose_mode) printDocumentToConsole(doc, System.out);
+			// Output the XML document to a .xml file created at the root directory
 			outputDocument(doc, rootDir, "dirMap");	
 		}
-//		
-//		System.exit(0);
 	}
 	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	Directory Mapping
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/
+	
+	/**
+	 * Maps a directory structure using XML elements
+	 * 
+	 * @param dirPath	The path of the directory to be mapped
+	 */
 	private static void mapDirectories(String dirPath) {
-		// We need to establish the root of the document, which will be the directory at the end of the dirPath - path\\end\\
-		int lastIdx = lastIdx = (dirPath.substring(0, dirPath.lastIndexOf("\\"))).lastIndexOf("\\") +1;
+
+		// Make a file using the (root) directory path
+		File topDir = new File(dirPath);
+		System.out.println("Mapping\n\t" + topDir.getAbsolutePath() + "\n");
 
 		// Initialize the root element
-		root = doc.createElement(dirPath.substring(lastIdx, dirPath.length() - 1));
+		root = doc.createElement("root");
+		root.setAttribute("path",topDir.getAbsolutePath());
 		doc.appendChild(root);
-		prevElement = root;
-
-		File topDir = new File(dirPath);
 		
-		if (useThreading) {
-			Thread t1 = new Thread(new Recursor(topDir));
-			t1.start();
-		} else {
-			dirRecursion(topDir);
-		}
+		// Begin the recursive method using the file at the root
+		parseDir(topDir, root);
 	}
 	
 	/**
-	 * Given a file, this function recursively does a linear search
-	 * through all directories and subdirectories and creates an 
-	 * xml object with 
-	 * @param file
-	 */
-	private static void dirRecursion (File file) {
-		// If there are no sub-files then leave
-		File[] contents = file.listFiles();
-		if (contents == null) {
-			return;
-		}
-		if (nextElement != null) {
-			prevElement = nextElement;
-		}
-		// If there are sub files
-		for ( File f : contents) {
+	 * Given a file and a root Element, this function performs a linear recursive
+	 * parsing of all directories and sub-directories, and adding XML elements
+	 * to a document
+	 * 
+	 * @param file			The parent file
+	 * @param parentElement	The parent XML element
+	 */	
+
+	private static void parseDir (File file, Element parentElement) {		
+		// Get all subfiles of the file
+		File[] content = file.listFiles();
+		// Stop if there are no subfiles (bottomed out)
+		if (content == null) return;
+		// Handle each subfile
+		for ( File f : content) {
 			// Print out the path to the subfile
-			System.out.println(f.getAbsolutePath());
+			if (verbose_mode) System.out.println(f.getAbsolutePath());
 
-			// create xml object for the subfile
-			nextElement = createXMLObject(f.getAbsolutePath());
+			// Create the child element
+			Element child = createXMLElement(f);
+
+			// recurse on the child
+			parseDir(f, child);
 			
-			if (nextElement != null) {
-				prevElement.appendChild(nextElement);				
-			}
-
-			// recurse on the subfiles
-			if (useThreading) {
-				Thread t2 = new Thread(new Recursor(f));
-				t2.start();
-			} else {
-				dirRecursion(f);
-			}
-		}
-		// if we are here then we have gone through all subfiles, then back out of the current rootDirectory and go up one (cd .. essentially)
-		Node prevNode = prevElement.getParentNode();
-		if (prevNode instanceof Element) {
-			prevElement = (Element)prevNode;
+			// Append the child to the parent element
+			parentElement.appendChild(child);
 		}
 	}
 	
-	private static Element createXMLObject(String objPath) {
-		int lastIdx = objPath.lastIndexOf("\\");
-		String objName = null;
-		String origName = null;
-		
-		if (lastIdx == -1) return null;
-		
-		objName = objPath.substring(lastIdx+1, objPath.length());			
-		if (objName == null) return null;
-		
-//		System.out.println(objName + "\t");
-		
-		// Check if the object has a file extension of .png
-		lastIdx = objName.lastIndexOf(".");
-		if (lastIdx != -1) {
-			// If so, modify the object name to give it a prefix of i_
-			origName = objName;
-			objName = "file";
-		}
-		// Here, check for any invalid characters for naming and remove them
-		objName = objName.replace("$", "");
-		// Here, check if the name starts with an invalid character and add an underscore (_)
-		if (objName.startsWith(".") || Character.isDigit(objName.charAt(0))) {
-			objName = "_" + objName;
-		}
-
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	XML Object Creation
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/
+	
+	/**
+	 * Given a file, create an XML element to represent the file
+	 * 
+	 * @param f		The file for which an XML element will be created
+	 * @return		The XML element
+	 */
+	private static Element createXMLElement(File f) {				
+		// Get the name of the file
+		String fileName = f.getName();			
+		// If no file name could be created, do not create an element
+		if (fileName == null) return null;			
+		// The XML element that will be returned
 		Element returnElement = null;
 		try {
-			returnElement = doc.createElement(objName);
+			// Check if the file is a directory or a file and set attributes / content based on that
+			if (f.isDirectory()) {
+				// Directory element
+				returnElement = doc.createElement("dir");
+				returnElement.setAttribute("name", fileName);
+			} else {
+				// File element
+				returnElement = doc.createElement("file");
+				returnElement.setTextContent(fileName);				
+			}
 		} catch (Exception e){
 			System.out.println(e);
 		}
-		// If we have a file and not a rootDirectory then set some attributes for the file
-		if (objName == "file") {
-			returnElement.setAttribute("name", origName);
+		if (returnElement != null ) { 
+			fileCount++;	// Add to the file count if we have created an element
 		}
 		return returnElement;
 	}
 	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	XML Document File Writing / Printing
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/
+	
+	/**
+	 * Given a document and an output stream (System.out for this implmenetation)
+	 * Prints the XML document to the console
+	 * 
+	 * @param doc	The XML document
+	 * @param out	The output stream (where the document is printed)
+	 */
 	public static void printDocumentToConsole(Document doc, OutputStream out) {
 		try {
 		    TransformerFactory tf = TransformerFactory.newInstance();
@@ -193,6 +211,13 @@ public class DirectoryXMLMapping{
         }
 	}
 	
+	/**
+	 * Creates and writes an XML document (no overwrite)
+	 *  
+	 * @param doc			The XML document to be written
+	 * @param saveLocation	Where the document should be created
+	 * @param fileName		What to name the document
+	 */
 	public static void outputDocument(Document doc, String saveLocation, String fileName) {
 		 try {
             Transformer tr = TransformerFactory.newInstance().newTransformer();
@@ -202,87 +227,48 @@ public class DirectoryXMLMapping{
             tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "roles.dtd");
             tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
-            // send DOM to file
-//            File outputFile = new File(saveLocation + fileName + ".xml");
-            // Make sure the file does not exist yet but if it does
-        	boolean checkAgain = true;
-        	long lastNumberInt = 0;
-        	
-        	String filepath = saveLocation + fileName + ".xml";
-            File aFile = new File(filepath);
+            // Make sure the file doesn't already exist before we try writing to it
+            File aFile = createFileNoOverwrite(saveLocation, fileName, ".xml");
             FileOutputStream outputFile = null;
-            if (aFile.isFile()) {
-              File newFile = aFile;
-              do {
-                String name = newFile.getName();
-                int period = name.indexOf('.');
-                newFile = new File(newFile.getParent(), name.substring(0, period) + "_old"
-                    + name.substring(period));
-              } while (newFile.exists());
-              aFile.renameTo(newFile);
-            }
             try {
-              outputFile = new FileOutputStream(aFile);
-              System.out.println("myFile.txt output stream created");
+            	outputFile = new FileOutputStream(aFile);
             } catch (Exception e) {
-              e.printStackTrace(System.err);
+            	e.printStackTrace(System.err);
             }
-//        	while (checkAgain) {
-//        		checkAgain = false;
-//	            if (outputFile.exists()) {
-//                	// Check if the file name already has a number at the end
-//                	Matcher matcher = lastIntPattern.matcher(fileName);
-//                	if (matcher.find()) {
-//                	    String someNumberStr = matcher.group(1);
-//                	    boolean addParen = false;
-//                	    if (someNumberStr.endsWith(")")) {
-//                	    	someNumberStr = someNumberStr.substring(0, someNumberStr.length()-1);
-//                	    	addParen = true;
-//                	    }
-//                	    lastNumberInt = Integer.parseInt(someNumberStr);
-//                	    // rename the file to be the next number so we don't overwrite
-//                	    fileName = fileName.replace(matcher.group(1), "" + (lastNumberInt+1));
-//                	    if (addParen) {	
-//                	    	fileName += ")";
-//                	    	checkAgain = true;
-//                	    }
-//                	} else {
-//                		// If the fileName exists and does not have a number at the end of the name
-//                		// then add a number so we don't overwrite the existing file
-//                		if(fileName.contains("(1)")) {	
-//                			break;
-//                		}
-//            			fileName += " (1)";
-//                		checkAgain = true;	// If we rename the filename, check again that it doesn't exist
-//                	}
-//                	outputFile = 
-//            	}
-//            }
+            // Write to the file
             tr.transform(new DOMSource(doc), 
                     new StreamResult(outputFile));
-//            tr.transform(new DOMSource(doc), 
-//                                 new StreamResult(new FileOutputStream(saveLocation + fileName + ".xml")));
 
         } catch (TransformerException te) {
             System.out.println(te.getMessage());
         } 
-//		 catch (IOException ioe) {
-//            System.out.println(ioe.getMessage());
-//        }
 	}
 	
-	public static class Recursor implements Runnable {
-		File topDir = null;
-		
-		public Recursor(File f) {
-			topDir = f;
-		}
-
-		@Override
-		public void run() {
-			// TODO Auto-generated method stub
-			dirRecursion(topDir);
-		}
+	/**
+	 * Creates a file for the XML document to be written to
+	 * 
+	 * @param location	Where to store the file
+	 * @param name		What to name the file
+	 * @param extension	What type of file it is
+	 * @return			The file
+	 */
+	private static File createFileNoOverwrite(String location, String name, String extension) {
+		String filepath = location + name + extension;
+        File newFile = new File(filepath);
+        if (newFile.isFile()) {
+        	long fileNumber = 1;	// Start this at 1
+        	// This keeps checking if a file exists already to prevent overwriting it following a naming scheme
+        	// File names are generated as like this: name.xml then name (1).xml then name (2).xml etc
+        	do {
+        		String newFileName = newFile.getName();
+        		int periodIdx = newFileName.indexOf('.');
+        		int l_parenIdx = newFileName.indexOf('(') == -1 ? periodIdx : newFileName.indexOf('(');
+        		String fileNumStr = "(" + fileNumber++ + ")";
+        		if (l_parenIdx == periodIdx) fileNumStr = " " + fileNumStr;
+        		newFile = new File(newFile.getParent(), newFileName.substring(0, l_parenIdx) + fileNumStr
+        				+ newFileName.substring(periodIdx));
+        	} while (newFile.exists());
+        }
+        return newFile;
 	}
-
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE root SYSTEM "roles.dtd">
 <root path="C:\Users\Penthesilea\Documents\GitHub\Squares-Interactive-GUI\workspace\SquInt-GUI\res">
+    <file>dirMap.xml</file>
     <dir name="images">
         <dir name="avatars">
             <dir name="re">
