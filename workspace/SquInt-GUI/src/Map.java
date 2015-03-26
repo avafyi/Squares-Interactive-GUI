@@ -1,12 +1,19 @@
-import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Hashtable;
 
-import javax.imageio.ImageIO;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 public class Map {
 	
@@ -49,6 +56,14 @@ public class Map {
 			this.m = map;
 		}
 	}
+	
+	// temp TODO
+	public static void main(String[] args) 
+	{		
+		new Map(0, 400, 400, 4);
+	}
+	
+	
 	/**
 	 * Maps must be rectangular
 	 * 
@@ -65,10 +80,49 @@ public class Map {
 		
 		// Generate the m grid
 //		mapTextureURLs = new String[mapLayers][mapHeight][mapWidth];	// Create a m with multiple layers and a [row][col] orientation
+		loadTextures();
 		MapArr map = generateBlankMap(mapLayers, mapWidth, mapHeight);		
 		addTransparentLayer(map, TRANSPARENT_LAYER);
 		initFlooring();
 //		generateFloor();
+	}
+	
+	private void loadTextures() {
+		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder = null;
+		try {
+			docBuilder = docBuilderFactory.newDocumentBuilder();
+		} catch (ParserConfigurationException e) {
+			e.printStackTrace();
+		}
+		Document doc = null;
+		try {
+			doc = docBuilder.parse(new File("res\\xml\\Textures.xml"));
+		} catch (SAXException | IOException e) {
+			e.printStackTrace();
+		}
+
+		// normalize text representation
+		doc.getDocumentElement().normalize();
+		NodeList dirs = doc.getElementsByTagName("dir");
+		for (int dir = 0; dir < dirs.getLength(); dir++) {
+			if (dirs.item(dir).getAttributes().getNamedItem("name").getTextContent().contains("house")) {
+				NodeList houseDirs = dirs.item(dir).getChildNodes();
+				for (int hDir = 0; hDir < houseDirs.getLength(); hDir++) {					
+					if (houseDirs.item(hDir).getAttributes().getNamedItem("name").getTextContent().contains("floor")) {
+						NodeList floorFiles = houseDirs.item(hDir).getChildNodes();
+						for (int floorFile = 0; floorFile < floorFiles.getLength(); floorFile++) {
+							System.out.println(floorFiles.item(floorFile).getNodeValue());
+						}
+					}
+				}
+			}
+		}
+		System.out.println ("floors " + doc.getElementsByTagName("file").item(0));//("floor").item(0).getNodeName());
+
+
+		NodeList listOfPersons = doc.getElementsByTagName("person");
+		int totalPersons = listOfPersons.getLength();
 	}
 	
 	private MapArr generateBlankMap(int layers, int w, int h) {		

@@ -19,15 +19,16 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 
-public class DirectoryXMLMapping{	
+public class DirectoryParser{	
 	
 	// XML specific vars
 	private static Document doc = null;
 	private static Element root	= null;
 	
 	// Runtime configuration options
-	private static final String rootDir = "res\\";
-	private static final Boolean outputToDocument = false; 
+	private static final String rootDir = "res\\images\\";
+	private static final String outputFileName = "Textures";
+	private static final Boolean outputToDocument = true; 
 	private static final Boolean timeProgram = true;
 	
 	// Debugging variables
@@ -35,9 +36,7 @@ public class DirectoryXMLMapping{
 	private static int fileCount = 0;
 	public static long startTime = 0;
 	
-
-	public static void main(String[] args) 
-	{		
+	public DirectoryParser(String dir, String fileName) {
 		// Set up a document
 		try {	
 			DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
@@ -54,7 +53,7 @@ public class DirectoryXMLMapping{
 		
 		// Map the directories if we have a doc
 		if (doc != null) {
-			mapDirectories(rootDir);			
+			mapDirectories(dir);			
 		}		
 
 		// Keep track of when the program ends so we can do some end-of-the-line methods / output
@@ -74,8 +73,13 @@ public class DirectoryXMLMapping{
 			// Print the XML document out to the console
 			if (verbose_mode) printDocumentToConsole(doc, System.out);
 			// Output the XML document to a .xml file created at the root directory
-			outputDocument(doc, rootDir, "dirMap");	
+			outputDocument(doc, dir, fileName);	
 		}
+	}
+
+	public static void main(String[] args) 
+	{		
+		new DirectoryParser(rootDir, outputFileName);
 	}
 	
 	/**___________________________________________________________________________________________**\
@@ -221,10 +225,11 @@ public class DirectoryXMLMapping{
 	public static void outputDocument(Document doc, String saveLocation, String fileName) {
 		 try {
             Transformer tr = TransformerFactory.newInstance().newTransformer();
+		    tr.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
             tr.setOutputProperty(OutputKeys.INDENT, "yes");
             tr.setOutputProperty(OutputKeys.METHOD, "xml");
             tr.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "roles.dtd");
+//            tr.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "roles.dtd");
             tr.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 
             // Make sure the file doesn't already exist before we try writing to it

@@ -104,7 +104,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
-	{
+	{		
 //		Level level = new Level(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
 		initRoom();
 //		initOutside();
