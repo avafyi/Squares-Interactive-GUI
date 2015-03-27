@@ -1,9 +1,0 @@
-
-public class MapSquare {
-	boolean isOccupied;
-	
-	public MapSquare() {
-		
-	}
-
-}
