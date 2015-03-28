@@ -10,18 +10,13 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final String TITLE = "...Squares Interactive GUI...";
 
 	// Name-constants (DIM stands for Dimension)
-	public static final int CANVAS_DIM = 400;				// The pixel width and height of the room
-	public static final int CANVAS_WIDTH = CANVAS_DIM;	// the pixel width of the room
+	public static final int CANVAS_DIM = 400;					// The pixel width and height of the room
+	public static final int CANVAS_WIDTH = CANVAS_DIM;			// the pixel width of the room
 	public static final int CANVAS_HEIGHT = CANVAS_WIDTH;		// the pixel height of the room
 	public static final int TILES_DIM = 10;						// the number of tiles (squares) in a row or column
 	public static final int TILE_DIM = CANVAS_DIM / TILES_DIM;	// the number of pixels per tile
 	
 	public Player player = null;
-
-	// ......
-
-	// private variables of GUI components
-	// ......
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() {
@@ -32,18 +27,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		addKeyListener(this);
         setFocusable(true);
         setFocusTraversalKeysEnabled(false);
-		
-		// "this" JPanel container sets layout
-		// setLayout(new ....Layout());
-
-		// Allocate the UI components
-		// .....
-
-		// "this" JPanel adds components
-		// add(....)
-
-		// Source object adds listener
-		// .....
 	}
 
 	/** Custom painting codes on this JPanel */
@@ -55,9 +38,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		
 		drawGrid(TILES_DIM, g);	// Draw the room grid
 		drawPlayer(player.x, player.y, g2d);	// Draw the player
-		// Draw the player
-		// Your custom painting codes
-		// ......
 	}
 
 	/**
@@ -97,7 +77,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	    gg.rotate(Math.toRadians(90 * player.direction), TILE_DIM/2, TILE_DIM/2);
 
 	    
-		gg.setColor(player.PLAYER_COLOR);
+		gg.setColor(Player.PLAYER_COLOR);
 		gg.fillArc((int)player_x_offset, (int)player_y_offset, (int)player_height, (int)player_width, 0, 360);
 		gg.setColor(Color.BLACK);
 
@@ -116,8 +96,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void moveRight() {
-		if ( player.direction != player.RIGHT ) {
-			player.direction = player.RIGHT;
+		if ( player.direction != Player.RIGHT ) {
+			player.direction = Player.RIGHT;
 		} else if ( player.x < TILES_DIM - 1 ) {
 			player.x++;		
 	        player.startMoveTimer();	
@@ -125,8 +105,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void moveUp() {
-		if ( player.direction != player.UP ) {
-			player.direction = player.UP;
+		if ( player.direction != Player.UP ) {
+			player.direction = Player.UP;
 		} else if ( player.y > 0 ) {
 			player.y--;
 	        player.startMoveTimer();
@@ -134,8 +114,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void moveLeft() {
-		if ( player.direction != player.LEFT ) {
-			player.direction = player.LEFT;
+		if ( player.direction != Player.LEFT ) {
+			player.direction = Player.LEFT;
 		} else if ( player.x > 0 ) {
 			player.x--;
 	        player.startMoveTimer();
@@ -143,8 +123,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void moveDown() {
-		if ( player.direction != player.DOWN ) {
-			player.direction = player.DOWN;
+		if ( player.direction != Player.DOWN ) {
+			player.direction = Player.DOWN;
 		} else if ( player.y < TILES_DIM - 1 ) {
 			player.y++;
 	        player.startMoveTimer();
@@ -182,16 +162,16 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        }
 	        repaint();
 		}
-        System.out.println("keyPressed");
+//        System.out.println("keyPressed");
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-        System.out.println("keyReleased");
+//        System.out.println("keyReleased");
 	}
 
 	@Override
 	public void keyTyped(KeyEvent e) {
-        System.out.println("keyTyped");
+//        System.out.println("keyTyped");
 	}
 }
