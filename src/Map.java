@@ -2,13 +2,18 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Hashtable;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -39,6 +44,7 @@ public class Map {
 	// Wall Orientations
 	public static enum WallOrientation { LEFT, RIGHT, TOP, BOTTOM };
 	public static enum Corner { Q1, Q2, Q3, Q4 };	// The quadrant (2d plane) of the "empty" portion of the wall
+//	public static String 
 	
 	// Floor Variables
 	public static enum FloorType { wood, pave, grass};
@@ -47,6 +53,9 @@ public class Map {
 	
 	// Map Layer Variables
 	public static final int TRANSPARENT_LAYER = 0;
+	
+	// Map Textures
+	public static ArrayList<String> floorTextures = new ArrayList<String>();
 
 	// A map array (just a 3d string)
 	public final class MapArr {
@@ -102,27 +111,43 @@ public class Map {
 			e.printStackTrace();
 		}
 
-		// normalize text representation
-		doc.getDocumentElement().normalize();
-		NodeList dirs = doc.getElementsByTagName("dir");
-		for (int dir = 0; dir < dirs.getLength(); dir++) {
-			if (dirs.item(dir).getAttributes().getNamedItem("name").getTextContent().contains("house")) {
-				NodeList houseDirs = dirs.item(dir).getChildNodes();
-				for (int hDir = 0; hDir < houseDirs.getLength(); hDir++) {					
-					if (houseDirs.item(hDir).getAttributes().getNamedItem("name").getTextContent().contains("floor")) {
-						NodeList floorFiles = houseDirs.item(hDir).getChildNodes();
-						for (int floorFile = 0; floorFile < floorFiles.getLength(); floorFile++) {
-							System.out.println(floorFiles.item(floorFile).getNodeValue());
-						}
-					}
-				}
+		XPath xPath = XPathFactory.newInstance().newXPath();
+		XPathExpression expr = null;
+		try {
+			expr = xPath.compile("//file");
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		NodeList nl = null;
+		try {
+			nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+		} catch (XPathExpressionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		for (int i = 0; i < nl.getLength(); i++) {
+			if (nl.item(i).getParentNode().getAttributes().item(0).getNodeValue().contains("floor")) {
+				System.out.println(nl.item(i).getTextContent());
 			}
 		}
-		System.out.println ("floors " + doc.getElementsByTagName("file").item(0));//("floor").item(0).getNodeName());
-
-
-		NodeList listOfPersons = doc.getElementsByTagName("person");
-		int totalPersons = listOfPersons.getLength();
+		
+		// Gets tha path to all files
+		NodeList nodes = doc.getElementsByTagName("file");
+		for(int i = 0; i < nodes.getLength(); i++) {
+			Node n = nodes.item(i);
+			ArrayList<String> path = new ArrayList<String>();
+			while (n.getParentNode() != null) {
+				if (n.hasAttributes()) {
+					path.add(n.getAttributes().item(0).getNodeValue());					
+				}
+				n = n.getParentNode();
+			}
+			Collections.reverse(path);
+			System.out.println(path);
+		}
+		
 	}
 	
 	private MapArr generateBlankMap(int layers, int w, int h) {		
