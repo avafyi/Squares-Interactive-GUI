@@ -159,7 +159,7 @@ public class Map {
 		int numCols = map.m[level][0].length;
 		for (int row = 0; row < numRows; row++) {
 			for (int col = 0; col < numCols; col++) {
-				map.m[level][row][col] = new Texture.Images().transparent;
+				map.m[level][row][col] = new TextureGroup.Images().transparent;
 			}
 		}
 	}

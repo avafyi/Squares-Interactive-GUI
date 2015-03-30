@@ -436,8 +436,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Failed to read image file");
-//			Texture path = new Texture();
-			System.out.println(new Texture.Images.House.Floor());
+//			TextureGroup path = new TextureGroup();
+			System.out.println(new TextureGroup.Images.House.Floor());
 		}
 		if (img == null) {
 			return;
