@@ -1,13 +1,17 @@
 import java.io.File;
 import java.util.ArrayList;
 
+import org.w3c.dom.Document;
 
-public class Texture extends TextureGroup{
+
+public class Texture {
 	ArrayList<File> textures = null;
+	ArrayList<File> directories = null;
 
-	public Texture(String textureType, String fileExten) {
-		super(textureType, fileExten);
-		this.textures = super.getTextures();
+	public Texture(String textureType, String fileExten, String resourceLocation) {	
+		TextureGroup tg = new TextureGroup(textureType, fileExten, resourceLocation);		
+		this.textures = tg.getTextures();
+		this.directories = tg.getDirectories();
 	}
 	
 	public File getTextureFile(String texture, String textureType) {
@@ -27,8 +31,8 @@ public class Texture extends TextureGroup{
 
 	public static void main(String[] args) {
 		// Get the floor texture, 0
-		Texture t = new Texture("blonde", ".png");
-		File myTexture = t.getTextureFile("0-1", ".png");
+		Texture t = new Texture("floor", ".png", "res/textures.zip");
+		File myTexture = t.getTextureFile("0", ".png");		
 		System.out.println(myTexture.getAbsolutePath());
 	}
 

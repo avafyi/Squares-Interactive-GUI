@@ -24,29 +24,52 @@ import org.xml.sax.SAXException;
 
 public class TextureGroup {
 	
-	public static final String resourceLocation = "res/textures.zip";
+	private String resourceLocation = "res/textures.zip";
 	private ArrayList<File> textureFiles = null;
+	private ArrayList<File> directoryFiles = null;
+	private ZipFile zipFile = null;
 		
-	public TextureGroup(String textureGroup, String fileExten) {
-	    ZipFile zipFile = null;
+	public TextureGroup(String textureGroup, String fileExten, String location) {
+		setResourceLocation(location);
+		InputStream stream = createInputStream();
+        Document doc = getDoc(stream);
+        textureFiles = loadTextures(textureGroup, fileExten, doc);
+        directoryFiles = loadDirs(doc);
+        try {
+			zipFile.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public void setResourceLocation(String location) {
+		resourceLocation = location;
+	}
+	
+	public InputStream createInputStream() {
+		InputStream stream = null;
 		try {
 			zipFile = new ZipFile(resourceLocation);
-
 		    Enumeration<? extends ZipEntry> entries = zipFile.entries();
 		    while(entries.hasMoreElements()){
 		        ZipEntry entry = entries.nextElement();
 		        // every entry is a folder and file in the directory
 		        // could use this to look for a file
 		        if (entry.getName().endsWith(".xml")) {
-			        InputStream stream = zipFile.getInputStream(entry);
-			        Document doc = getDoc(stream);
-			        textureFiles = loadTextures(textureGroup, fileExten, doc);
+			        stream = zipFile.getInputStream(entry);
+			        break;
 		        }
 		    }
 		    
 		} catch (IOException e) {
 			e.printStackTrace();
 		}		
+		return stream;
+	}
+	
+	public ArrayList<File> getDirectories() {
+		return directoryFiles;
 	}
 	
 	public ArrayList<File> getTextures() {
@@ -54,10 +77,10 @@ public class TextureGroup {
 	}
 	
 	public static void main(String[] args) {
-		TextureGroup t = new TextureGroup("floor", ".png");
+		TextureGroup t = new TextureGroup("floor", ".png", "res/textures.zip");
 	}
 	
-	private Document getDoc(InputStream stream) {
+	public Document getDoc(InputStream stream) {
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = null;
 		try {
@@ -74,6 +97,13 @@ public class TextureGroup {
 		return doc;
 	}
 	
+	private ArrayList<File> loadDirs(Document doc) {
+		if (doc == null) {
+			return null;
+		}
+		return getDirs(doc);
+	}
+	
 	/**
 	 * Expects an xml file input stream
 	 * The xml file will tell it where to look for textures
@@ -87,31 +117,29 @@ public class TextureGroup {
 		return getFilesFromDir(textureGroup, textureType, doc);
 	}
 	
-	private ArrayList<String> getDirs(Document doc) {
-		ArrayList<String> directories = new ArrayList<String>();
+	public ArrayList<File> getDirs(Document doc) {
+		ArrayList<File> directoryFiles = new ArrayList<File>();
 		XPath xPath = XPathFactory.newInstance().newXPath();
 		XPathExpression expr = null;
 		try {
 			expr = xPath.compile("//dir");
 		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		NodeList nl = null;
 		try {
 			nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
 		for (int i = 0; i < nl.getLength(); i++) {
 			String dirName = nl.item(i).getAttributes().item(0).getNodeValue();
 			if (dirName != null) {
-				directories.add(dirName);				
+				directoryFiles.add(getDirFile(dirName, doc));				
 			}
 		}
-		return directories;
+		return directoryFiles;
 	}
 	
 	private ArrayList<File> getFilesFromDir(String directoryName, String fileType, Document doc) {
@@ -166,20 +194,37 @@ public class TextureGroup {
 		return pathString;
 	}
 	
-	private File getFile(String fileName, String folderName, Document doc) {
-		return new File(getFilePath(fileName, folderName, doc));
+	public File getDirFile(String dirName, Document doc) {
+		String filePath = getFilePath(dirName, null, doc, "dir");
+		if (filePath != null) return new File(filePath);		
+		else return null;
 	}
 	
-	private String getFilePath(String fileName, String folderName, Document doc) {
+	public File getFile(String fileName, String folderName, Document doc) {
+		String filePath = getFilePath(fileName, folderName, doc, "file");
+		if (filePath != null) return new File(filePath);		
+		else return null;
+	}
+	
+	private String getFilePath(String fileName, String folderName, Document doc, String fileClassification) {
 		String filePath = null;
 		// Gets the path to all files
-		NodeList nodes = doc.getElementsByTagName("file");
+		NodeList nodes = doc.getElementsByTagName(fileClassification);
 		for(int i = 0; i < nodes.getLength(); i++) {
 			Node fileNode = nodes.item(i);
-			if (fileNode.getTextContent() != null && fileNode.getTextContent().contains(fileName) && fileNode.getParentNode().hasAttributes() && fileNode.getParentNode().getAttributes().item(0).getNodeValue().contains(folderName)) {
-				filePath = getFileURL(nodes.item(i)) + fileName;
-				break;
-			}			
+			if (fileClassification.contains("file")) {
+				// If we are looking for a specific file, we want to check the folder it is inside in the case of duplicate filenames
+				if (fileNode.getTextContent() != null && fileNode.getTextContent().contains(fileName) && fileNode.getParentNode().hasAttributes() && fileNode.getParentNode().getAttributes().item(0).getNodeValue().contains(folderName)) {						
+					filePath = getFileURL(nodes.item(i)) + fileName;
+					break;
+				}		
+			} else {
+				if (fileNode.hasAttributes() && fileNode.getAttributes().item(0).getNodeValue().contains(fileName)) {
+					filePath = getFileURL(nodes.item(i));
+					break;
+				}	
+			}
+				
 		}
 		return filePath;
 	}
