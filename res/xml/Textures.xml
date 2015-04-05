@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<root path="C:\Users\Penthesilea\Documents\GitHub\Squares-Interactive-GUI\workspace\SquInt-GUI\res\images">
+<root path="C:\Users\Penthesilea\Documents\GitHub\Squares-Interactive-GUI\res\images">
     <dir name="avatars">
         <dir name="re">
             <dir name="blond">
@@ -243,14 +243,6 @@
         </dir>
     </dir>
     <dir name="house">
-        <dir name="floor">
-            <file>0.png</file>
-            <file>1.png</file>
-            <file>2.png</file>
-            <file>3.png</file>
-            <file>4.png</file>
-            <file>5.png</file>
-        </dir>
         <dir name="shadows">
             <file>0.png</file>
             <file>1.png</file>
@@ -303,6 +295,17 @@
             <file>8.png</file>
             <file>9.png</file>
         </dir>
+        <dir name="wood_floor">
+            <file>0.png</file>
+            <file>1.png</file>
+            <file>2.png</file>
+            <file>3.png</file>
+            <file>4.png</file>
+            <file>5.png</file>
+        </dir>
+    </dir>
+    <dir name="misc">
+        <file>transparent.png</file>
     </dir>
     <dir name="outside_house">
         <dir name="door">
@@ -434,7 +437,4 @@
             <file>7.png</file>
         </dir>
     </dir>
-    <file>Textures (1).xml</file>
-    <file>Textures.xml</file>
-    <file>transparent.png</file>
 </root>

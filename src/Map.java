@@ -1,24 +1,8 @@
 import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Hashtable;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 public class Map {
 	
@@ -34,6 +18,9 @@ public class Map {
 	public static int mapWidth;		// In m squares
 	public static int mapHeight;	// In m squares
 	public static int mapLayers;	// Number of layers of the m (Image layers)
+	public static int mapSquareDim;	// Size of a map square (in pixels)
+	public static int mapRows;		// The number of logical rows in the map (mapHeight / mapSquareDim)
+	public static int mapCols;		// The number of logical columns in the map (mapWidth / mapSquareDim)
 
 	// Map 
 	private BufferedImage mapStaticBackground = null;	// The static background for the m (so the entire level isn't constantly repainted)
@@ -47,21 +34,39 @@ public class Map {
 //	public static String 
 	
 	// Floor Variables
-	public static enum FloorType { wood, pave, grass};
+//	public static enum FloorType { wood, pave, grass};
 	public static String[] floorPaths = new String[] {"in_floor/", "out_pave/", "out_grass/"};
-	public static Hashtable<FloorType, String> floorHash = new Hashtable<FloorType, String>();
+//	public static Hashtable<FloorType, String> floorHash = new Hashtable<FloorType, String>();
 	
 	// Map Layer Variables
-	public static final int TRANSPARENT_LAYER = 0;
+	// These layers are not strict, so a wall could be added to a shadow layer for example
+	private static class MAP_LAYER { 
+		public static final int TRANSPARENT = 0;
+		public static final int FLOOR = 1;
+		public static final int SHADOW = 2;
+		public static final int WALL = 3;
+	} 
+	// Used to store a ratio of normal to unique
+	private static class Seed {
+		public double normalPercentage;
+		public double uniquePercentage;
+		public Seed(int normal, int unique) {
+			int total = normal+unique;
+			normalPercentage = normal/total;
+			uniquePercentage = unique/total;
+		}
+	}
+	
 	
 	// Map Textures
-	public static ArrayList<String> floorTextures = new ArrayList<String>();
+	public static Hashtable<String, ArrayList<File>> textures = null;
+	
 
 	// A map array (just a 3d string)
-	public final class MapArr {
-		private final String[][][] m;
+	public final class MapArray {
+		private final File[][][] m;
 		
-		public MapArr(String[][][] map) {
+		public MapArray(File[][][] map) {
 			this.m = map;
 		}
 	}
@@ -69,7 +74,7 @@ public class Map {
 	// temp TODO
 	public static void main(String[] args) 
 	{		
-		new Map(0, 400, 400, 4);
+		new Map(0, 640, 640, 4, 40);
 	}
 	
 	
@@ -79,100 +84,82 @@ public class Map {
 	 * @param map_id
 	 * @param map_width		number of m squares across
 	 * @param map_height	number of m squares down
+	 * @param num_layers	how many texture layers in the map
 	 */
-	public Map(int map_id, int map_width, int map_height, int num_layers) {
+	public Map(int map_id, int map_width, int map_height, int num_layers, int squareDim) {
 		// Set values that will act like constants for the m
 		mapId = map_id;
 		mapWidth = map_width;
 		mapHeight = map_height;
 		mapLayers = num_layers;
+		mapSquareDim = squareDim;
+		mapRows = mapHeight / mapSquareDim;
+		mapCols = mapWidth / mapSquareDim;
 		
 		// Generate the m grid
 //		mapTextureURLs = new String[mapLayers][mapHeight][mapWidth];	// Create a m with multiple layers and a [row][col] orientation
-		loadTextures();
-		MapArr map = generateBlankMap(mapLayers, mapWidth, mapHeight);		
-		addTransparentLayer(map, TRANSPARENT_LAYER);
-		initFlooring();
-//		generateFloor();
+		FileLoader files = loadFiles(".png");		
+		textures = files.getTextureGroupsTable();
+		MapArray map = generateBlankMap(mapLayers, mapCols, mapRows);		
+		addTransparentLayer(map, MAP_LAYER.TRANSPARENT);
+		addLevelTerrain(map, MAP_LAYER.FLOOR, 3, 3, 12, 12, "wood_floor", new Seed(10,6));
+//		addWalls();
+//		addObjects();
+//		addShadows();	
+		
 	}
 	
-	private void loadTextures() {
-		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder docBuilder = null;
-		try {
-			docBuilder = docBuilderFactory.newDocumentBuilder();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		}
-		Document doc = null;
-		try {
-			doc = docBuilder.parse(new File("res\\xml\\Textures.xml"));
-		} catch (SAXException | IOException e) {
-			e.printStackTrace();
-		}
-
-		XPath xPath = XPathFactory.newInstance().newXPath();
-		XPathExpression expr = null;
-		try {
-			expr = xPath.compile("//file");
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		NodeList nl = null;
-		try {
-			nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		for (int i = 0; i < nl.getLength(); i++) {
-			if (nl.item(i).getParentNode().getAttributes().item(0).getNodeValue().contains("floor")) {
-				System.out.println(nl.item(i).getTextContent());
-			}
-		}
+	// http://stackoverflow.com/questions/4050087/how-to-obtain-the-last-path-segment-of-an-uri
+	public static String getLastBitFromUrl(final String url){
+	    return url.replaceFirst(".*\\\\([^\\\\?]+).*", "$1");
+	}
+	
+	private FileLoader loadFiles(String fileType) {
+		FileLoader fileLoader = new FileLoader("res/xml/Textures.xml");
+		// Get all directories in the filesystem specified by the .xml file above
+		ArrayList<String> textureDirs = fileLoader.getTextureDirectories();
 		
-		// Gets tha path to all files
-		NodeList nodes = doc.getElementsByTagName("file");
-		for(int i = 0; i < nodes.getLength(); i++) {
-			Node n = nodes.item(i);
-			ArrayList<String> path = new ArrayList<String>();
-			while (n.getParentNode() != null) {
-				if (n.hasAttributes()) {
-					path.add(n.getAttributes().item(0).getNodeValue());					
+		int textureCount = 0;	// Count how many textures were loaded
+		// Go through every directory and create a texture group for it
+		for(String dir : textureDirs) {
+			String group = getLastBitFromUrl(dir);
+			fileLoader.createTextureGroup(group, fileType);
+			// Look at the files for which we just made a group
+			ArrayList<File> files = fileLoader.getTextureGroup(group);
+			// If no group of files was made, go on to create the next group
+			if (files == null) {
+				continue;
+			}
+			// Count the files in the group
+			for(File f : files) {
+				if (f.getAbsolutePath().endsWith(fileType)) {
+					textureCount++;
 				}
-				n = n.getParentNode();
-			}
-			Collections.reverse(path);
-			System.out.println(path);
-		}
-		
-	}
-	
-	private MapArr generateBlankMap(int layers, int w, int h) {		
-		return new MapArr(new String[layers][w][h]);
-	}
-	
-	private void addTransparentLayer(MapArr map, int level) {
-		int numRows = map.m[level].length;
-		int numCols = map.m[level][0].length;
-		for (int row = 0; row < numRows; row++) {
-			for (int col = 0; col < numCols; col++) {
-				map.m[level][row][col] = new TextureGroup.Images().transparent;
 			}
 		}
+		System.out.println(textureCount + " textures loaded.");
+		return fileLoader;
 	}
 	
-	private void initFlooring() {
-		int idx = 0;
-		// Populate the hashtable pairing floortypes to their paths
-		for(FloorType ft : FloorType.values()) {
-			if (floorPaths[idx] != null) {
-				floorHash.put(ft, floorPaths[idx++]);				
-			} else {
-				// Undefined floor type
-				return;
+	private MapArray generateBlankMap(int layers, int rows, int cols) {		
+		return new MapArray(new File[layers][rows][cols]);
+	}
+	
+	private void addTransparentLayer(MapArray map, int layer) {
+		File transparentFile = null;
+		for (File f : textures.get("misc")) {
+			if (f.getName().contains("transparent")) {
+				transparentFile = f;
+				break;
+			}
+		}
+		if (transparentFile == null) {
+			System.out.println("ERROR: No transparent file found for transparent map layer");
+			return;
+		}
+		for (int row = 0; row < mapRows; row++) {
+			for (int col = 0; col < mapCols; col++) {
+				map.m[layer][row][col] = transparentFile;
 			}
 		}
 	}
@@ -180,21 +167,19 @@ public class Map {
 	// This can apply for both wood flooring or pavement or grass as supported by available textures
 	// Return a generated array? Or merge with a parameter-provided array?
 	// 4 1 5 5
-	// if randSeed == 0 			all clean
-	// if randSeed >= 1 && <= 3 	clean variations
-	// if randSeed >= 4 && <= 10	clean mixed with clean variations mixed with unique boards (higher the value, the more unique) 
-	private void generateFloor(String[][] map, int sRow, int sCol, int eRow, int eCol, FloorType type, int randSeed) {
+	// if randSeed == 0 			all normal
+	// if randSeed >= 1 && <= 10 	normal with unique
+	private void addLevelTerrain(MapArray map, int mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, Seed terrainSeed) {
 		// add in some code so that we get certain floor images based on the randSeed variable
 		// use Math.random with some form of scaling so that if randSeed is say, 10 then we have a huge chance
 		// of getting unique boards and a much lower change of the normal, clean variations
-		
-		
-		String floorDir = floorHash.get(type);
-		while(sRow <= eRow) {
-			while(sCol <= eCol) {				
-				map[sRow][sCol++] = floorDir + IMG_EXT;	// 
+		ArrayList<File> flooring = textures.get(terrainType);
+		String floorDir = floorHash.get(terrainType);
+		while(startRow <= endRow) {
+			while(startCol <= endCol) {				
+				map[startRow][startCol++] = floorDir + IMG_EXT;	// 
 			}
-			sRow++;
+			startRow++;
 		}
 	}
 	

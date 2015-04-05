@@ -1,9 +1,11 @@
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -21,26 +23,53 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-
-public class TextureGroup {
+public class FileLoader {
 	
 	private String resourceLocation = "res/textures.zip";
-	private ArrayList<File> textureFiles = null;
-	private ArrayList<File> directoryFiles = null;
-	private ZipFile zipFile = null;
 		
-	public TextureGroup(String textureGroup, String fileExten, String location) {
+	private ArrayList<File> directoryFiles = null;
+	private ArrayList<String> directoryPaths = null;
+	private Document doc;
+	private Hashtable<String, ArrayList<File>> textureGroups = null;
+		
+	public FileLoader(String location) {
 		setResourceLocation(location);
 		InputStream stream = createInputStream();
-        Document doc = getDoc(stream);
-        textureFiles = loadTextures(textureGroup, fileExten, doc);
+        doc = getDoc(stream);
         directoryFiles = loadDirs(doc);
-        try {
-			zipFile.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+        
+        // Load the directory paths into the arraylist
+        directoryPaths = new ArrayList<String>();
+        for(File f : directoryFiles) {
+        	directoryPaths.add(f.getAbsolutePath());
+        }
+        textureGroups = new Hashtable<String, ArrayList<File>>();
+	}
+	
+	public Hashtable<String, ArrayList<File>> getTextureGroupsTable() {
+		return textureGroups;
+	}
+	
+	public void createTextureGroup(String textureGroup, String fileExten) {
+		// If the texture group was already created, return null
+		if (textureGroups.contains(textureGroup)) {
+			return;
 		}
+		ArrayList<File> textures = loadTextures(textureGroup, fileExten, doc);
+		if (textures != null) {
+	        textureGroups.put(textureGroup, textures);
+		}
+	}
+	
+	public ArrayList<File> getTextureGroup(String group) {
+		if (!textureGroups.containsKey(group)) {
+			return null;
+		}
+		return textureGroups.get(group);
+	}
+	
+	public ArrayList<String> getTextureDirectories() {
+		return directoryPaths;
 	}
 	
 	public void setResourceLocation(String location) {
@@ -49,6 +78,27 @@ public class TextureGroup {
 	
 	public InputStream createInputStream() {
 		InputStream stream = null;
+		if (resourceLocation.contains(".zip")) {
+			stream = getInpStreamFromZip();
+		} else {		
+			stream = getInpStreamFromDir();
+		}			
+		return stream;
+	}
+	
+	public InputStream getInpStreamFromDir() {
+		InputStream stream = null;
+		try {
+			stream = new FileInputStream(resourceLocation);		    
+		} catch (IOException e) {
+			e.printStackTrace();
+		}	
+		return stream;
+	}
+		
+	public InputStream getInpStreamFromZip() {
+		InputStream stream = null;
+		ZipFile zipFile = null;
 		try {
 			zipFile = new ZipFile(resourceLocation);
 		    Enumeration<? extends ZipEntry> entries = zipFile.entries();
@@ -61,10 +111,10 @@ public class TextureGroup {
 			        break;
 		        }
 		    }
-		    
+		    zipFile.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}		
+		}	
 		return stream;
 	}
 	
@@ -72,12 +122,9 @@ public class TextureGroup {
 		return directoryFiles;
 	}
 	
-	public ArrayList<File> getTextures() {
-		return textureFiles;
-	}
-	
 	public static void main(String[] args) {
-		TextureGroup t = new TextureGroup("floor", ".png", "res/textures.zip");
+//		FileLoader t = new FileLoader("res/textures.zip");
+		FileLoader t = new FileLoader("res/xml/Textures.xml");
 	}
 	
 	public Document getDoc(InputStream stream) {
@@ -148,14 +195,12 @@ public class TextureGroup {
 		try {
 			expr = xPath.compile("//file");
 		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		NodeList nl = null;
 		try {
 			nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
 		} catch (XPathExpressionException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -168,6 +213,9 @@ public class TextureGroup {
 				}
 			}
 		}	
+		if (files.isEmpty()) {
+			return null;
+		}
 		return files;
 	}
 	
