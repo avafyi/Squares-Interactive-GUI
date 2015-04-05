@@ -2,7 +2,8 @@ import java.awt.Point;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Random;
 
 public class Map {
 	
@@ -15,18 +16,18 @@ public class Map {
 	
 	// Map Attributes
 	public static int mapId;
-	public static int mapWidth;		// In m squares
-	public static int mapHeight;	// In m squares
-	public static int mapLayers;	// Number of layers of the m (Image layers)
+	public static int mapWidth;		// In textures squares
+	public static int mapHeight;	// In textures squares
+	public static int mapLayers;	// Number of layers of the textures (Image layers)
 	public static int mapSquareDim;	// Size of a map square (in pixels)
 	public static int mapRows;		// The number of logical rows in the map (mapHeight / mapSquareDim)
 	public static int mapCols;		// The number of logical columns in the map (mapWidth / mapSquareDim)
 
 	// Map 
-	private BufferedImage mapStaticBackground = null;	// The static background for the m (so the entire level isn't constantly repainted)
+	private BufferedImage mapStaticBackground = null;	// The static background for the textures (so the entire level isn't constantly repainted)
 	private String[][][] mapTextureURLs = null;			// TODO - once the background and squares are initialized, this is useless
 	private Point[][] roomSquaresCoords = null;			// TODO - once the background and squares are initialized, this is useless
-	private MapSquare[][] mapSquares = null;	// The logical m (used to track players, objects, and collisions)
+	private MapSquare[][] mapSquares = null;	// The logical textures (used to track players, objects, and collisions)
 		
 	// Wall Orientations
 	public static enum WallOrientation { LEFT, RIGHT, TOP, BOTTOM };
@@ -46,12 +47,12 @@ public class Map {
 		public static final int SHADOW = 2;
 		public static final int WALL = 3;
 	} 
-	// Used to store a ratio of normal to unique
-	private static class Seed {
+	// Used to store a ratio of normal to unique (the first half of a texture group is considered the normal half)
+	public final class Seed {
 		public double normalPercentage;
 		public double uniquePercentage;
-		public Seed(int normal, int unique) {
-			int total = normal+unique;
+		public Seed(double normal, double unique) {
+			double total = normal+unique;
 			normalPercentage = normal/total;
 			uniquePercentage = unique/total;
 		}
@@ -59,35 +60,43 @@ public class Map {
 	
 	
 	// Map Textures
-	public static Hashtable<String, ArrayList<File>> textures = null;
+	public static HashMap<String, TextureGroup> textures = null;
+	
+	// Resources
+	public ResourceLoader resources = null;
 	
 
 	// A map array (just a 3d string)
 	public final class MapArray {
-		private final File[][][] m;
+		public final Texture[][][] textures;	// Holds textures for all layers and squares of the map
+		public final Point[][] coords;	// Holds the pixel coordinates for all map squares
 		
-		public MapArray(File[][][] map) {
-			this.m = map;
+		public MapArray(Texture[][][] map, Point[][] p) {
+			this.textures = map;
+			this.coords = p;
 		}
 	}
 	
 	// temp TODO
 	public static void main(String[] args) 
 	{		
-		new Map(0, 640, 640, 4, 40);
-	}
+		ResourceLoader resLoad = new ResourceLoader();
+		new Map(resLoad, 0, 640, 640, 4, 40);
+	}	
 	
+	public MapArray map = null;
 	
 	/**
 	 * Maps must be rectangular
 	 * 
 	 * @param map_id
-	 * @param map_width		number of m squares across
-	 * @param map_height	number of m squares down
+	 * @param map_width		number of textures squares across
+	 * @param map_height	number of textures squares down
 	 * @param num_layers	how many texture layers in the map
 	 */
-	public Map(int map_id, int map_width, int map_height, int num_layers, int squareDim) {
-		// Set values that will act like constants for the m
+	public Map(ResourceLoader resLoader, int map_id, int map_width, int map_height, int num_layers, int squareDim) {
+		resources = resLoader;
+		// Set values that will act like constants for the textures
 		mapId = map_id;
 		mapWidth = map_width;
 		mapHeight = map_height;
@@ -96,11 +105,15 @@ public class Map {
 		mapRows = mapHeight / mapSquareDim;
 		mapCols = mapWidth / mapSquareDim;
 		
-		// Generate the m grid
-//		mapTextureURLs = new String[mapLayers][mapHeight][mapWidth];	// Create a m with multiple layers and a [row][col] orientation
-		FileLoader files = loadFiles(".png");		
-		textures = files.getTextureGroupsTable();
-		MapArray map = generateBlankMap(mapLayers, mapCols, mapRows);		
+		
+		// Generate the textures grid
+//		mapTextureURLs = new String[mapLayers][mapHeight][mapWidth];	// Create a textures with multiple layers and a [row][col] orientation
+		// Load all files with a '.png' extension that aren't in the 'avatars' group
+		textures = new HashMap<String, TextureGroup>();
+		loadFiles(".png", new String[] {"avatars"});	
+		// Load the file groups from our file loader into our hashtable of texture groups
+		// exclude groups we do not want
+		map = generateBlankMap(mapLayers, mapCols, mapRows);		
 		addTransparentLayer(map, MAP_LAYER.TRANSPARENT);
 		addLevelTerrain(map, MAP_LAYER.FLOOR, 3, 3, 12, 12, "wood_floor", new Seed(10,6));
 //		addWalls();
@@ -109,57 +122,58 @@ public class Map {
 		
 	}
 	
-	// http://stackoverflow.com/questions/4050087/how-to-obtain-the-last-path-segment-of-an-uri
-	public static String getLastBitFromUrl(final String url){
-	    return url.replaceFirst(".*\\\\([^\\\\?]+).*", "$1");
-	}
-	
-	private FileLoader loadFiles(String fileType) {
-		FileLoader fileLoader = new FileLoader("res/xml/Textures.xml");
-		// Get all directories in the filesystem specified by the .xml file above
-		ArrayList<String> textureDirs = fileLoader.getTextureDirectories();
+	private void loadFiles(String fileType, String[] excludedGroups) {
+		// Get all the directories that are not in an excluded group
+		ArrayList<File> dirFiles = resources.getAllDirsExcluding(excludedGroups);
+		// Create a list to hold the paths for the directories
+		ArrayList<String> dirPaths = new ArrayList<String>();
+		for (File file : dirFiles) {
+			dirPaths.add(file.getAbsolutePath());
+		}
 		
 		int textureCount = 0;	// Count how many textures were loaded
 		// Go through every directory and create a texture group for it
-		for(String dir : textureDirs) {
-			String group = getLastBitFromUrl(dir);
-			fileLoader.createTextureGroup(group, fileType);
-			// Look at the files for which we just made a group
-			ArrayList<File> files = fileLoader.getTextureGroup(group);
-			// If no group of files was made, go on to create the next group
-			if (files == null) {
-				continue;
+		for(String dir : dirPaths) {
+			// If the directory is an excluded group or a sub-directory of 
+			// an excluded group, don't create a group for it
+			for (String excludedGroup : excludedGroups) {
+				if (dir.contains(excludedGroup));
 			}
-			// Count the files in the group
-			for(File f : files) {
-				if (f.getAbsolutePath().endsWith(fileType)) {
-					textureCount++;
-				}
-			}
+			String group = GlobalHelper.getLastBitFromUrl(dir);
+			TextureGroup tg = new TextureGroup(resources.getAllFilesInDirWithExten(group, fileType), group);
+			if (tg.textures != null) {
+				textures.put(group, tg);
+				textureCount++;
+			}			
 		}
-		System.out.println(textureCount + " textures loaded.");
-		return fileLoader;
+		System.out.println(textureCount + " texture groups loaded.");
 	}
 	
 	private MapArray generateBlankMap(int layers, int rows, int cols) {		
-		return new MapArray(new File[layers][rows][cols]);
+		Point[][] coords = new Point[rows][cols];
+		for (int row = 0, rowPoint = 0; row < rows; row++, rowPoint += mapSquareDim) {
+			for (int col = 0, colPoint = 0; col < cols; cols++, colPoint += mapSquareDim ) {
+				coords[row][col] = new Point(colPoint, rowPoint);
+			}
+		}
+		return new MapArray(new Texture[layers][rows][cols], coords);
 	}
 	
 	private void addTransparentLayer(MapArray map, int layer) {
-		File transparentFile = null;
-		for (File f : textures.get("misc")) {
-			if (f.getName().contains("transparent")) {
-				transparentFile = f;
+		Texture transparentTexture = null;
+		for (Texture t : textures.get("misc").textures) {
+			if (t.textureFile.getName().contains("transparent")) {
+				transparentTexture = t;
 				break;
 			}
 		}
-		if (transparentFile == null) {
+		if (transparentTexture == null) {
 			System.out.println("ERROR: No transparent file found for transparent map layer");
 			return;
 		}
 		for (int row = 0; row < mapRows; row++) {
 			for (int col = 0; col < mapCols; col++) {
-				map.m[layer][row][col] = transparentFile;
+				map.textures[layer][row][col] = transparentTexture;
 			}
 		}
 	}
@@ -173,23 +187,33 @@ public class Map {
 		// add in some code so that we get certain floor images based on the randSeed variable
 		// use Math.random with some form of scaling so that if randSeed is say, 10 then we have a huge chance
 		// of getting unique boards and a much lower change of the normal, clean variations
-		ArrayList<File> flooring = textures.get(terrainType);
-		String floorDir = floorHash.get(terrainType);
-		while(startRow <= endRow) {
-			while(startCol <= endCol) {				
-				map[startRow][startCol++] = floorDir + IMG_EXT;	// 
+		Texture[][] layerTextures = map.textures[mapLayer];
+//		ArrayList<File> flooring = textures.get(terrainType);
+//		String floorDir = floorHash.get(terrainType);
+		TextureGroup tg = textures.get(terrainType);
+		for (int row = startRow; row < endRow; row++) {
+			for (int col = startCol; col < endCol; col++) {
+				double random = Math.random();
+				Random r = new Random();
+				int textureIdx = -1;
+				// get a random texture index
+				if (random <= terrainSeed.normalPercentage) {
+					textureIdx = (int)(r.nextInt(tg.textures.length/2));
+				} else {
+					textureIdx = (int)(r.nextInt(tg.textures.length - tg.textures.length/2) + tg.textures.length/2);
+				}
+				layerTextures[row][col] = tg.textures[textureIdx]; 
 			}
-			startRow++;
 		}
 	}
 	
 	/**
 	 * 
-	 * @param row			The logical starting row coordinate on the level (m)
-	 * @param col			The logical starting col coordinate on the level (m)
+	 * @param row			The logical starting row coordinate on the level (textures)
+	 * @param col			The logical starting col coordinate on the level (textures)
 	 * @param orientation	Which wall type, also used to check start, end coordinates
 	 * @param len			The length of the wall, if the Corners are not null, they are included in the total len
-	 * @param layer			The m layer to place the wall
+	 * @param layer			The textures layer to place the wall
 	 * @param lCorner		The corner on the left/top part of the wall (If null, no corner added)
 	 * @param rCorner		The corner on the right/bottom part of the wall (If null, no corner added)
 	 */
@@ -355,7 +379,7 @@ public class Map {
 //				// Check if any of the layers contains a wall, if so then create a MapSquare that cannot be occupied by a player
 //				// If any square in the first layer has an imageURL of "" then that means that it is a part of a larger object
 //				
-//				// If we run across a m square that has already been initialized (like in the case of a wall texture that takes up
+//				// If we run across a textures square that has already been initialized (like in the case of a wall texture that takes up
 //				// more than one room square) then ignore this square and continue on to the next column
 //				if (mapSquares[row][col] != null) {
 //					continue;
@@ -381,12 +405,12 @@ public class Map {
 //							int numSquaresTall = bimg.getHeight() / MAP_DIM;
 //							for (int c = 0; c < numSquaresWide; c++) {
 //								for (int r = 0; r < numSquaresTall; r++) {
-//									// Because of how the bottom left corner wall, wall image 14, is textured, the top right m square is not solid
+//									// Because of how the bottom left corner wall, wall image 14, is textured, the top right textures square is not solid
 //									// the same goes for the bottom right corner wall, wall image 15
 //									if ((c == 1 && r == 0 && layer[row][col].contains("in_walls/14.png")) 
 //											|| (c == 0 && r == 0 && layer[row][col].contains("in_walls/15.png"))) 
 //									{
-//										continue;	// Skip this m square
+//										continue;	// Skip this textures square
 //									}
 //									mapSquares[row+r][col+c] = new MapSquare(true, MapSquare.SOLID, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
 //								}	

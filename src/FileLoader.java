@@ -25,15 +25,17 @@ import org.xml.sax.SAXException;
 
 public class FileLoader {
 	
-	private String resourceLocation = "res/textures.zip";
+	private String resourceLocation;
 		
 	private ArrayList<File> directoryFiles = null;
 	private ArrayList<String> directoryPaths = null;
 	private Document doc;
-	private Hashtable<String, ArrayList<File>> textureGroups = null;
+	// Store file groups which are a hashtable with a key of the directory name
+	// and the data being all files stored in that directory of a specific type
+	private Hashtable<String, ArrayList<File>> fileGroups = null;
 		
 	public FileLoader(String location) {
-		setResourceLocation(location);
+		resourceLocation = location;
 		InputStream stream = createInputStream();
         doc = getDoc(stream);
         directoryFiles = loadDirs(doc);
@@ -43,37 +45,27 @@ public class FileLoader {
         for(File f : directoryFiles) {
         	directoryPaths.add(f.getAbsolutePath());
         }
-        textureGroups = new Hashtable<String, ArrayList<File>>();
+        fileGroups = new Hashtable<String, ArrayList<File>>();
 	}
 	
-	public Hashtable<String, ArrayList<File>> getTextureGroupsTable() {
-		return textureGroups;
+	public Hashtable<String, ArrayList<File>> getFileGroups() {
+		return new Hashtable<String, ArrayList<File>>(fileGroups);
 	}
 	
-	public void createTextureGroup(String textureGroup, String fileExten) {
-		// If the texture group was already created, return null
-		if (textureGroups.contains(textureGroup)) {
-			return;
+	public ArrayList<File> createFileGroup(String fileGroupName, String fileExten) {
+		return loadFiles(fileGroupName, fileExten, doc);
+	}
+	
+	public ArrayList<File> getFileGroup(String group) {
+		if (!fileGroups.containsKey(group)) {
+			// Return an empty array list in case the caller uses a for-each
+			return new ArrayList<File>();
 		}
-		ArrayList<File> textures = loadTextures(textureGroup, fileExten, doc);
-		if (textures != null) {
-	        textureGroups.put(textureGroup, textures);
-		}
+		return new ArrayList<File>(fileGroups.get(group));
 	}
 	
-	public ArrayList<File> getTextureGroup(String group) {
-		if (!textureGroups.containsKey(group)) {
-			return null;
-		}
-		return textureGroups.get(group);
-	}
-	
-	public ArrayList<String> getTextureDirectories() {
-		return directoryPaths;
-	}
-	
-	public void setResourceLocation(String location) {
-		resourceLocation = location;
+	public ArrayList<String> getFileDirectories() {
+		return new ArrayList<String>(directoryPaths);
 	}
 	
 	public InputStream createInputStream() {
@@ -119,12 +111,12 @@ public class FileLoader {
 	}
 	
 	public ArrayList<File> getDirectories() {
-		return directoryFiles;
+		return new ArrayList<File>(directoryFiles);
 	}
 	
 	public static void main(String[] args) {
-//		FileLoader t = new FileLoader("res/textures.zip");
-		FileLoader t = new FileLoader("res/xml/Textures.xml");
+		FileLoader t = new FileLoader("res/textures.zip");
+//		FileLoader t = new FileLoader("res/xml/Textures.xml");
 	}
 	
 	public Document getDoc(InputStream stream) {
@@ -146,22 +138,24 @@ public class FileLoader {
 	
 	private ArrayList<File> loadDirs(Document doc) {
 		if (doc == null) {
-			return null;
+			// Return an empty array list in case the caller uses a for-each
+			return new ArrayList<File>();
 		}
 		return getDirs(doc);
 	}
 	
 	/**
 	 * Expects an xml file input stream
-	 * The xml file will tell it where to look for textures
+	 * The xml file will tell it where to look for files
 	 * 
 	 * @param stream
 	 */
-	private ArrayList<File> loadTextures(String textureGroup, String textureType, Document doc) {
-		if (doc == null || textureType == null) {
-			return null;
+	private ArrayList<File> loadFiles(String fileGroup, String fileType, Document doc) {
+		if (doc == null || fileType == null) {
+			// return an empty array list in case the caller uses a for-each
+			return new ArrayList<File>();
 		}
-		return getFilesFromDir(textureGroup, textureType, doc);
+		return getFilesFromDir(fileGroup, fileType, doc);
 	}
 	
 	public ArrayList<File> getDirs(Document doc) {
@@ -206,16 +200,13 @@ public class FileLoader {
 
 		ArrayList<File> files = new ArrayList<File>();
 		for (int i = 0; i < nl.getLength(); i++) {
-			if (nl.item(i).getParentNode().getAttributes().item(0).getNodeValue().contains(directoryName)) {
+			if (nl.item(i).getParentNode().getAttributes().item(0).getNodeValue().equals(directoryName)) {
 				String fileName = nl.item(i).getTextContent();
-				if (fileName != null && fileName.endsWith(fileType)) {
+				if (fileName != null && fileName.endsWith(fileType) || fileType.equals(".*")) {
 					files.add(getFile(fileName, directoryName, doc));
 				}
 			}
 		}	
-		if (files.isEmpty()) {
-			return null;
-		}
 		return files;
 	}
 	

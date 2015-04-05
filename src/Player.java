@@ -1,5 +1,7 @@
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -25,20 +27,23 @@ public class Player {
 	public int x; 						// the x location of the player using tile coordinates
 	public int y;						// the y location of the player using tile coordinates
 	public int direction;
-	public String avatar = null;
 	public boolean allowedToMove;
 	public int animatePhase;
 	private Timer moveTimer = null;
 	public int playerIdx;
 	public int speed;
 	
-	public static List<String> avatars = Arrays.asList(
-			"blond", "blond_spiky", "blonde_blue", "blonde_hairband", "blue", 
-			"brown", "brown_green", "brown_mustache", "brown_ponytail", "dark_knight", 
-			"glasses", "graying", "green", "pirate", 
-			"purple", "red_mustache", "strawberry");
+	// Holds the textures for the avatar (more than one texture because of animations)
+	public Texture[] avatarTextures = null;
 	
 	public Player(MapSquare[][] sq, int direction, String avatar, boolean canIMove, int idx) {
+		
+		// Load avatar files
+		String[] excludedGroups = new String[] {"avatars"};
+		textures = new HashMap<String, TextureGroup>();
+		loadFiles(".png", excludedGroups);	
+		
+		
 		// Pick a pseudorandom location to place the player based on the given map
 		Integer[] numRows = new Integer[sq.length];
 		for (int i = 0; i < numRows.length; i++) {
@@ -82,6 +87,29 @@ public class Player {
 		speed = WALKING;
 		playerIdx = idx;		
 		allowedToMove = canIMove;
+	}
+	
+	private void loadFiles(String fileType, String[] excludedGroups) {
+		FileLoader fileLoader = new FileLoader("res/xml/Textures.xml");
+		// Get all directories in the filesystem specified by the .xml file above
+		ArrayList<String> textureDirs = fileLoader.getFileDirectories();
+		
+		int textureCount = 0;	// Count how many textures were loaded
+		// Go through every directory and create a texture group for it
+		for(String dir : textureDirs) {
+			// If the directory is an excluded group or a sub-directory of 
+			// an excluded group, don't create a group for it
+			for (String excludedGroup : excludedGroups) {
+				if (dir.contains(excludedGroup));
+			}
+			String group = getLastBitFromUrl(dir);
+			TextureGroup tg = new TextureGroup(fileLoader.createFileGroup(group, fileType), group);
+			if (tg.textures != null) {
+				textures.put(group, tg);
+				textureCount++;
+			}			
+		}
+		System.out.println(textureCount + " texture groups loaded.");
 	}
 	
 	public void startMoveTimer() {		

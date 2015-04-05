@@ -101,12 +101,17 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 //	public static final int OUT_SQUARES_ACROSS = 20;	// The logical width of the map
 //	public static final int OUT_SQUARES_DOWN = 15;		// The logical height of the map
 //	public static final int OUT = 1;	// Level number
+	Map level = null;
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
 	{		
+		ResourceLoader resLoad = new ResourceLoader();
+		
 //		Level level = new Level(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
-		initRoom();
+		level = new Map(resLoad, 0, 640, 640, 4, 40);
+		roomBackgroundImage = makeImage(level.map.textures, level.map.coords);
+//		initRoom();
 //		initOutside();
 		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
 		
@@ -117,7 +122,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		if (AI_MODE) 
 		{
 			ai_players = new Player[NUM_AI_PLAYERS];
-			List<String> avatars = Player.avatars;	// Gather the list of available avatars
+			List<String> avatars = null;//Player.avatars;	// Gather the list of available avatars
 			Collections.shuffle(avatars);			// Shuffle the list for randomization
 			
 			// Go through and create the specified number of players
@@ -130,14 +135,14 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				// in the case that there was no more room for players, the player would have a null avatar
 				// if the player was not successfully created, then too many AI players were requested and
 				// the array of ai_players should be resized, and the loop exited
-				if (ai_players[ai].avatar == null) 
-				{
-					Player[] newAI_players = new Player[ai];
-					System.arraycopy(ai_players, 0, newAI_players, 0, ai);
-					ai_players = newAI_players;
-					break;
-				}
-				updateMap(mapSquares, ai_players[ai], true);					
+//				if (ai_players[ai].avatar == null) 
+//				{
+//					Player[] newAI_players = new Player[ai];
+//					System.arraycopy(ai_players, 0, newAI_players, 0, ai);
+//					ai_players = newAI_players;
+//					break;
+//				}
+//				updateMap(mapSquares, ai_players[ai], true);					
 			}
 			// Configure a timer to automatically move the AI players
 			autoMoveTimer = new Timer();
@@ -160,183 +165,183 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}		
 	}
 	
-	private void initRoom() {
-		roomSquaresCoords = new Point[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS]; 	
-		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
-			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
-				roomSquaresCoords[row][col] = new Point(col * MAP_DIM, row * MAP_DIM);
-			}
-		}		
-		
-		// Standard wall, floor, wall row
-		final String[] wfw_row = new String[] {
-			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
-		};
-		// Wall, special floor, wall row
-		final String[] wsfw1_row = new String[] {
-			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/1.png", "in_floor/5.png", "in_floor/0.png", "in_floor/4.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
-		};
-		// Wall, special floor, wall row
-		final String[] wsfw2_row = new String[] {
-			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/1.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/2.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
-		};
-		// Wall, special floor, wall row
-		final String[] wsfw3_row = new String[] {
-			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/4.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
-		};
-		final String[] left_shade = new String[] {
-			"transparent.png", "transparent.png", "", "in_shadows/6.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"
-		};
-		final String[] empty_row = new String[] {
-			"transparent.png", "transparent.png", "", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"	
-		};
-		final String[] top_row = new String[] {
-			"transparent.png", "transparent.png", "in_walls/0.png", "", "in_walls/3.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/4.png", "", "transparent.png", "transparent.png"	
-		};
-		final String[] transparent_row = new String[] {
-				"transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png"	
-		};
-		roomSquaresImageURLs = new String[][][] {
-			{
-				empty_row,	// top row
-				empty_row,	// top row
-				empty_row,	// top row
-				wsfw2_row,	// middle row
-				wfw_row,
-				wsfw1_row,
-				wfw_row,
-				wsfw3_row,
-				wsfw1_row,
-				wsfw2_row,
-				wfw_row,
-				wsfw1_row,
-				{"transparent.png", "transparent.png", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "transparent.png", "transparent.png"}, 	// bottom row
-				{"transparent.png", "transparent.png", "", "", "", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row (doorway flooring)
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-			},
-			{
-				top_row,	// top row
-				empty_row,	// top row
-				empty_row,	// top row
-				{"transparent.png", "transparent.png", "", "in_shadows/0.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "", "transparent.png", "transparent.png"},
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				left_shade,	// middle row
-				{"transparent.png", "transparent.png", "in_walls/14.png", "", "", "", "", "", "", "", "", "", "in_walls/15.png", "", "transparent.png", "transparent.png"},	// bottom row
-				{"transparent.png", "transparent.png", "", "", "in_walls/17.png", "in_walls/18.png", "in_walls/11.png", "in_shadows/3.png", "", "in_walls/10.png", "in_walls/18.png", "in_walls/17.png", "", "", "transparent.png", "transparent.png"},	// bottom row
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-			},
-			{
-				empty_row,	// top row
-				empty_row,	// top row
-				empty_row,	// top row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				empty_row,	// middle row
-				{"transparent.png", "transparent.png", "", "in_shadows/8.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row
-				empty_row,	// bottom row
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-				transparent_row,
-			}
-		};
-		mapSquares = new MapSquare[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS];
-		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
-			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
-				// Check if any of the layers contains a wall, if so then create a MapSquare that cannot be occupied by a player
-				// If any square in the first layer has an imageURL of "" then that means that it is a part of a larger object
-				
-				// If we run across a map square that has already been initialized (like in the case of a wall texture that takes up
-				// more than one room square) then ignore this square and continue on to the next column
-				if (mapSquares[row][col] != null) {
-					continue;
-				}
-				findSolidsLoop:
-				for (String[][] layer : roomSquaresImageURLs) {
-					boolean isSolid = false;
-					for(String solid : SOLIDS) {
-						if (layer[row][col].contains(solid)) {	
-							isSolid = true;
-						}
-					}
-					if (isSolid) {		
-						File imageSrc = new File(IMAGES_DIR + layer[row][col]);					
-						BufferedImage bimg = null;
-						try {
-							bimg = ImageIO.read(imageSrc);
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-						if (bimg != null) {
-							int numSquaresWide = bimg.getWidth() / MAP_DIM;
-							int numSquaresTall = bimg.getHeight() / MAP_DIM;
-							for (int c = 0; c < numSquaresWide; c++) {
-								for (int r = 0; r < numSquaresTall; r++) {
-									// Because of how the bottom left corner wall, wall image 14, is textured, the top right map square is not solid
-									// the same goes for the bottom right corner wall, wall image 15
-									if ((c == 1 && r == 0 && layer[row][col].contains("in_walls/14.png")) 
-											|| (c == 0 && r == 0 && layer[row][col].contains("in_walls/15.png"))) 
-									{
-										continue;	// Skip this map square
-									}
-									mapSquares[row+r][col+c] = new MapSquare(true, MapSquare.SOLID, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
-								}	
-							}
-						}
-						break findSolidsLoop;
-					}
-				}
-				if (mapSquares[row][col] == null) {
-					mapSquares[row][col] = new MapSquare(false, MapSquare.EMPTY, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
-				}
-			}
-		}	
-		roomBackgroundImage = makeImage(roomSquaresImageURLs, roomSquaresCoords);
-	}
+//	private void initRoom() {
+//		roomSquaresCoords = new Point[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS]; 	
+//		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
+//			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
+//				roomSquaresCoords[row][col] = new Point(col * MAP_DIM, row * MAP_DIM);
+//			}
+//		}		
+//		
+//		// Standard wall, floor, wall row
+//		final String[] wfw_row = new String[] {
+//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
+//		};
+//		// Wall, special floor, wall row
+//		final String[] wsfw1_row = new String[] {
+//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/1.png", "in_floor/5.png", "in_floor/0.png", "in_floor/4.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
+//		};
+//		// Wall, special floor, wall row
+//		final String[] wsfw2_row = new String[] {
+//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/1.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/2.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
+//		};
+//		// Wall, special floor, wall row
+//		final String[] wsfw3_row = new String[] {
+//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/4.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
+//		};
+//		final String[] left_shade = new String[] {
+//			"transparent.png", "transparent.png", "", "in_shadows/6.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"
+//		};
+//		final String[] empty_row = new String[] {
+//			"transparent.png", "transparent.png", "", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"	
+//		};
+//		final String[] top_row = new String[] {
+//			"transparent.png", "transparent.png", "in_walls/0.png", "", "in_walls/3.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/4.png", "", "transparent.png", "transparent.png"	
+//		};
+//		final String[] transparent_row = new String[] {
+//				"transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png"	
+//		};
+//		roomSquaresImageURLs = new String[][][] {
+//			{
+//				empty_row,	// top row
+//				empty_row,	// top row
+//				empty_row,	// top row
+//				wsfw2_row,	// middle row
+//				wfw_row,
+//				wsfw1_row,
+//				wfw_row,
+//				wsfw3_row,
+//				wsfw1_row,
+//				wsfw2_row,
+//				wfw_row,
+//				wsfw1_row,
+//				{"transparent.png", "transparent.png", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "transparent.png", "transparent.png"}, 	// bottom row
+//				{"transparent.png", "transparent.png", "", "", "", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row (doorway flooring)
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//			},
+//			{
+//				top_row,	// top row
+//				empty_row,	// top row
+//				empty_row,	// top row
+//				{"transparent.png", "transparent.png", "", "in_shadows/0.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "", "transparent.png", "transparent.png"},
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				left_shade,	// middle row
+//				{"transparent.png", "transparent.png", "in_walls/14.png", "", "", "", "", "", "", "", "", "", "in_walls/15.png", "", "transparent.png", "transparent.png"},	// bottom row
+//				{"transparent.png", "transparent.png", "", "", "in_walls/17.png", "in_walls/18.png", "in_walls/11.png", "in_shadows/3.png", "", "in_walls/10.png", "in_walls/18.png", "in_walls/17.png", "", "", "transparent.png", "transparent.png"},	// bottom row
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//			},
+//			{
+//				empty_row,	// top row
+//				empty_row,	// top row
+//				empty_row,	// top row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				empty_row,	// middle row
+//				{"transparent.png", "transparent.png", "", "in_shadows/8.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row
+//				empty_row,	// bottom row
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//				transparent_row,
+//			}
+//		};
+//		mapSquares = new MapSquare[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS];
+//		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
+//			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
+//				// Check if any of the layers contains a wall, if so then create a MapSquare that cannot be occupied by a player
+//				// If any square in the first layer has an imageURL of "" then that means that it is a part of a larger object
+//				
+//				// If we run across a map square that has already been initialized (like in the case of a wall texture that takes up
+//				// more than one room square) then ignore this square and continue on to the next column
+//				if (mapSquares[row][col] != null) {
+//					continue;
+//				}
+//				findSolidsLoop:
+//				for (String[][] layer : roomSquaresImageURLs) {
+//					boolean isSolid = false;
+//					for(String solid : SOLIDS) {
+//						if (layer[row][col].contains(solid)) {	
+//							isSolid = true;
+//						}
+//					}
+//					if (isSolid) {		
+//						File imageSrc = new File(IMAGES_DIR + layer[row][col]);					
+//						BufferedImage bimg = null;
+//						try {
+//							bimg = ImageIO.read(imageSrc);
+//						} catch (IOException e) {
+//							e.printStackTrace();
+//						}
+//						if (bimg != null) {
+//							int numSquaresWide = bimg.getWidth() / MAP_DIM;
+//							int numSquaresTall = bimg.getHeight() / MAP_DIM;
+//							for (int c = 0; c < numSquaresWide; c++) {
+//								for (int r = 0; r < numSquaresTall; r++) {
+//									// Because of how the bottom left corner wall, wall image 14, is textured, the top right map square is not solid
+//									// the same goes for the bottom right corner wall, wall image 15
+//									if ((c == 1 && r == 0 && layer[row][col].contains("in_walls/14.png")) 
+//											|| (c == 0 && r == 0 && layer[row][col].contains("in_walls/15.png"))) 
+//									{
+//										continue;	// Skip this map square
+//									}
+//									mapSquares[row+r][col+c] = new MapSquare(true, MapSquare.SOLID, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
+//								}	
+//							}
+//						}
+//						break findSolidsLoop;
+//					}
+//				}
+//				if (mapSquares[row][col] == null) {
+//					mapSquares[row][col] = new MapSquare(false, MapSquare.EMPTY, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
+//				}
+//			}
+//		}	
+//		roomBackgroundImage = makeImage(roomSquaresImageURLs, roomSquaresCoords);
+//	}
 	
-	public BufferedImage makeImage(String[][][] imageURLs, Point[][] coords) {
+	public BufferedImage makeImage(Texture[][][] textures, Point[][] coords) {
 		BufferedImage bImg = new BufferedImage(CANVAS_WIDTH, CANVAS_HEIGHT, 
 				BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g2 = bImg.createGraphics();
 
 		// background drawing here, the display that doesn't change
-		drawGrid(g2, imageURLs, coords);
+		drawGrid(g2, textures, coords);
 
 		g2.dispose();
 		return bImg;
@@ -398,17 +403,17 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * @param numTilesPerRowAndCol		the number of tiles per row and per column
 	 * @param g							the graphics object
 	 */
-	private void drawGrid(Graphics g, String[][][] imageURLs, Point[][] coords) {	    				
-		for (int layer = 0; layer < imageURLs.length; layer++) {
+	private void drawGrid(Graphics g, Texture[][][] textures, Point[][] coords) {	    				
+		for (int layer = 0; layer < textures.length; layer++) {
 			for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
 				for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {
 					// Allow for empty grid spots in case of larger images
-					if ( imageURLs[layer][row][col] != "" ) {
+					if ( textures[layer][row][col].textureFile != null ) {
 						// If the image to be drawn to the grid is for shading we want to handle it differently
-						if (imageURLs[layer][row][col].contains("shad")) {
-							drawImageToGrid(imageURLs[layer][row][col], coords[row][col].x, coords[row][col].y, g, true, false);							
+						if (textures[layer][row][col].textureDir.contains("shad")) {
+							drawImageToGrid(textures[layer][row][col].textureFile, coords[row][col].x, coords[row][col].y, g, true, false);							
 						} else {
-							drawImageToGrid(imageURLs[layer][row][col], coords[row][col].x, coords[row][col].y, g, false, false);
+							drawImageToGrid(textures[layer][row][col].textureFile, coords[row][col].x, coords[row][col].y, g, false, false);
 						}
 					}
 				}
@@ -419,25 +424,22 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	/**
 	 * Draw an image onto the room
 	 * 
-	 * @param fileURL		The path to the image file
+	 * @param imageFile		The path to the image file
 	 * @param x_coord		the x coordinate of the top left corner where the image should be drawn (it is drawn from there to the bottom right)
 	 * @param y_coord		the y coordinate of the top left corner where the image should be drawn
 	 * @param g				the graphics object that we are drawing the image onto
 	 * @param isShading		whether or not the image is being used to add shading
 	 * @param scaleImage	whether or not to scale the image to fit inside a tile dimension (used to make scale player avatars)
 	 */
-	private void drawImageToGrid(String fileURL, int x_coord, int y_coord, Graphics g, boolean isShading, boolean scaleImage) {
-		File imageSrc = new File(IMAGES_DIR + fileURL);		
+	private void drawImageToGrid(File imageFile, int x_coord, int y_coord, Graphics g, boolean isShading, boolean scaleImage) {
 		Image img = null;
 		BufferedImage bimg = null;	// Used if the image needs to be scaled
 		try {
-			img = ImageIO.read(imageSrc);
-			bimg = ImageIO.read(imageSrc);
+			img = ImageIO.read(imageFile);
+			bimg = ImageIO.read(imageFile);
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Failed to read image file");
-//			FileLoader path = new FileLoader();
-			System.out.println(new FileLoader.Images.House.Floor());
 		}
 		if (img == null) {
 			return;
