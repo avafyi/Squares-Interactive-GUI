@@ -1,0 +1,7 @@
+Count lines of code in project
+	Search > File Search
+	Check the Regular expression box.
+	Use this expression:
+		\n[\s]*
+	Select file type *.java
+http://stackoverflow.com/questions/1043666/counting-line-numbers-in-eclipse

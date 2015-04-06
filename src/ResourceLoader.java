@@ -38,7 +38,7 @@ public class ResourceLoader {
 			files.put(group, fileMap);
 		}
 		// Print the number of loaded files to the console
-		System.out.println("Loaded " + files.size() + " file groups");
+		System.out.println("Loaded " + files.size() + " resource groups");
 	}
 	
 	public File getFile(String dir, String fileName) {

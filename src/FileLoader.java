@@ -114,11 +114,6 @@ public class FileLoader {
 		return new ArrayList<File>(directoryFiles);
 	}
 	
-	public static void main(String[] args) {
-		FileLoader t = new FileLoader("res/textures.zip");
-//		FileLoader t = new FileLoader("res/xml/Textures.xml");
-	}
-	
 	public Document getDoc(InputStream stream) {
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = null;

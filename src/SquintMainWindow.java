@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
@@ -59,7 +58,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	
 	// Window constants
 	public static final int CANVAS_WIDTH = 640;			// the pixel width of the application window
-	public static final int CANVAS_HEIGHT = 960;		// the pixel height of the application window
+	public static final int CANVAS_HEIGHT = 640;		// the pixel height of the application window
 	
 	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
 	private final boolean AI_MODE = false;			// Set this = true to make some dummies (prevents user control)
@@ -80,18 +79,19 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	Hashtable<Integer, ScheduledExecutorService> animationExecutors = new Hashtable<Integer, ScheduledExecutorService>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
 
 	// General Level variables
-	private int currentMap = IN;
+//	private int currentMap = IN;
 	public static final int MAP_DIM = 40;				// the number of pixels per grid square
-	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
-	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
+//	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
+//	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
 	private static enum Level { interior, exterior };
 	
 	// Inside Level
-	private String[][][] roomSquaresImageURLs = null;
-	private Point[][] roomSquaresCoords = null;
+//	private String[][][] roomSquaresImageURLs = null;
+//	private Point[][] roomSquaresCoords = null;
 	private BufferedImage roomBackgroundImage = null;
 	private MapSquare[][] mapSquares = null;
-	public static final int IN = 0;	// Level ID number
+	
+//	public static final int IN = 0;	// Level ID number
 	
 	// Outside Level
 //	private String[][][] outsideSquaresImageURLs = null;
@@ -101,16 +101,29 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 //	public static final int OUT_SQUARES_ACROSS = 20;	// The logical width of the map
 //	public static final int OUT_SQUARES_DOWN = 15;		// The logical height of the map
 //	public static final int OUT = 1;	// Level number
+	
+	//
 	Map level = null;
+	public static final int MAP_LAYERS = 4;
+	AvatarGroup avatars = null;
+	public static final int MAP_LEVEL = 0;
+	// Resource loader
+	private ResourceLoader resLoad = null;
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
 	{		
-		ResourceLoader resLoad = new ResourceLoader();
-		
-//		Level level = new Level(0, NUM_SQUARES_ACROSS, NUM_SQUARES_DOWN, 4);
-		level = new Map(resLoad, 0, 640, 640, 4, 40);
+		// Create a resource loader so we can get textures
+		resLoad = new ResourceLoader();		
+		// Create the level
+		level = new Map(resLoad, MAP_LEVEL, CANVAS_WIDTH, CANVAS_HEIGHT, MAP_LAYERS, MAP_DIM);
+		// Allow for easy access to the map squares
+		mapSquares = level.map.squares;
+		// Create a static background image for the level
 		roomBackgroundImage = makeImage(level.map.textures, level.map.coords);
+		// Create an avatar group for the players
+		avatars = new AvatarGroup(resLoad, "re");
+		
 //		initRoom();
 //		initOutside();
 		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
@@ -121,28 +134,25 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 
 		if (AI_MODE) 
 		{
-			ai_players = new Player[NUM_AI_PLAYERS];
-			List<String> avatars = null;//Player.avatars;	// Gather the list of available avatars
-			Collections.shuffle(avatars);			// Shuffle the list for randomization
-			
+			// Initialize the array of players so they can all be drawn
+			ai_players = new Player[NUM_AI_PLAYERS];			
 			// Go through and create the specified number of players
 			for (int ai = 0; ai < NUM_AI_PLAYERS; ai++) 
 			{				
-				// Each AI is created in a random available location with a unique avatar 
-				// (unless more AI are requested than exists avatars), facing a random direction
-				ai_players[ai] = new Player(mapSquares, (int)(Math.random()*4), avatars.get(ai % avatars.size()), true, ++num_players);
+				// Each AI is created in a random available location with a random avatar, facing a random direction
+				ai_players[ai] = new Player(avatars.getRandomAvatar(), mapSquares, (int)(Math.random()*4), true, num_players++);
 				
 				// in the case that there was no more room for players, the player would have a null avatar
 				// if the player was not successfully created, then too many AI players were requested and
 				// the array of ai_players should be resized, and the loop exited
-//				if (ai_players[ai].avatar == null) 
-//				{
-//					Player[] newAI_players = new Player[ai];
-//					System.arraycopy(ai_players, 0, newAI_players, 0, ai);
-//					ai_players = newAI_players;
-//					break;
-//				}
-//				updateMap(mapSquares, ai_players[ai], true);					
+				if (ai_players[ai].avatar == null) 
+				{
+					Player[] newAI_players = new Player[ai];
+					System.arraycopy(ai_players, 0, newAI_players, 0, ai);
+					ai_players = newAI_players;
+					break;
+				}
+				updateMap(mapSquares, ai_players[ai], true);					
 			}
 			// Configure a timer to automatically move the AI players
 			autoMoveTimer = new Timer();
@@ -159,8 +169,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				}		
 			}, 2000, AI_MOVE_DELAY);
 		} else {
-			// Create a new player and update the map to indicate their location
-			player = new Player(mapSquares, Player.DOWN, "glasses", true, ++num_players);
+			// Create a new player and update the map to show it
+//			player = new Player(avatars.getRandomAvatar(), mapSquares, Player.DOWN, true, ++num_players);
+			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.DOWN, true, ++num_players);			
 			updateMap(mapSquares, player, true);			
 		}		
 	}
@@ -352,7 +363,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);  // paint background
 		drawMap(g, Level.interior);
-		Graphics2D g2d = (Graphics2D) g;
+//		Graphics2D g2d = (Graphics2D) g;
 		drawAvatars((Graphics2D) g, AI_MODE);
 	}
 	
@@ -404,11 +415,11 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * @param g							the graphics object
 	 */
 	private void drawGrid(Graphics g, Texture[][][] textures, Point[][] coords) {	    				
-		for (int layer = 0; layer < textures.length; layer++) {
-			for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
-				for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {
+		for (int layer = 0, layerCap = textures.length; layer < layerCap; layer++) {
+			for (int row = 0, rowCap = textures[layer].length; row < rowCap; row++) {
+				for (int col = 0, colCap = textures[layer][row].length; col < colCap; col++) {
 					// Allow for empty grid spots in case of larger images
-					if ( textures[layer][row][col].textureFile != null ) {
+					if ( textures[layer][row][col] != null && textures[layer][row][col].textureFile != null ) {
 						// If the image to be drawn to the grid is for shading we want to handle it differently
 						if (textures[layer][row][col].textureDir.contains("shad")) {
 							drawImageToGrid(textures[layer][row][col].textureFile, coords[row][col].x, coords[row][col].y, g, true, false);							
@@ -459,62 +470,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			img = Toolkit.getDefaultToolkit().createImage(producer);  
 		}
 		if (scaleImage) {
-			Dimension scaledSize = getScaledDimension(new Dimension(bimg.getWidth(), bimg.getWidth()), new Dimension(MAP_DIM, MAP_DIM), true);
+			Dimension scaledSize = ImageEditor.getScaledDimension(new Dimension(bimg.getWidth(), bimg.getWidth()), new Dimension(MAP_DIM, MAP_DIM), true);
 			img = resizeToBig(img, scaledSize.width, scaledSize.height);
 		}
 		Graphics2D g2d = (Graphics2D) g;
 		g2d.drawImage(img, x_coord, y_coord, null);
-	}
-	
-//	private int translateCoords(int x, int y) {
-//		return (int)(y * TILES_DIM) + x;
-//	}
-	public static Dimension getScaledDimension(Dimension imgSize, Dimension boundary, boolean scaleUp) {
-
-	    int original_width = imgSize.width;
-	    int original_height = imgSize.height;
-	    int bound_width = boundary.width;
-	    int bound_height = boundary.height;
-	    int new_width = original_width;
-	    int new_height = original_height;
-
-	    if (scaleUp) {
-		    // first check if we need to scale width
-		    if (original_width < bound_width) {
-		        //scale width to fit
-		        new_width = bound_width;
-		        //scale height to maintain aspect ratio
-		        new_height = (new_width * original_height) / original_width;
-		    }
-
-		    // then check if we need to scale even with the new height
-		    if (new_height < bound_height) {
-		        //scale height to fit instead
-		        new_height = bound_height;
-		        //scale width to maintain aspect ratio
-		        new_width = (new_height * original_width) / original_height;
-		    }
-	    } else {
-
-		    // first check if we need to scale width
-		    if (original_width > bound_width) {
-		        //scale width to fit
-		        new_width = bound_width;
-		        //scale height to maintain aspect ratio
-		        new_height = (new_width * original_height) / original_width;
-		    }
-
-		    // then check if we need to scale even with the new height
-		    if (new_height > bound_height) {
-		        //scale height to fit instead
-		        new_height = bound_height;
-		        //scale width to maintain aspect ratio
-		        new_width = (new_height * original_width) / original_height;
-		    }
-	    }
-
-	    return new Dimension(new_width, new_height);
-	}
+	}	
 	
 	private Image resizeToBig(Image originalImage, int biggerWidth, int biggerHeight) {
 	    int type = BufferedImage.TYPE_INT_ARGB;
@@ -553,10 +514,18 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			} else if (p.direction == Player.DOWN) {	
 				player_y += animationStep;	
 			}				
-			drawImageToGrid(AVATAR_SUBDIR + p.avatar + "/" + p.direction + "-" + ((p.animatePhase % 2) + 1) + ".png", player_x, player_y - MAP_DIM/2, g, false, true);
+			String textureName = p.direction + "-" + ((p.animatePhase % 2) + 1) + ".png";
+			Texture t = p.avatar.getTextureWithName(textureName);
+			if (t != null) {
+				drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
+			}
 			phaseComplete = true;
-		} else {
-			drawImageToGrid(AVATAR_SUBDIR + p.avatar + "/" + p.direction + ".png", player_x, player_y - MAP_DIM/2, g, false, true);
+		} else {		
+			String textureName = p.direction + ".png";
+			Texture t = p.avatar.getTextureWithName(textureName);
+			if (t != null) {
+				drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
+			}
 		}
 	}
 
@@ -609,7 +578,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			
 			p.animatePhase = 0;	// Reset to default of no animation			
 			p.allowedToMove = true; // Let the player move again now that the animation is complete
-			animationExecutors.get(p.playerIdx).shutdown();
+			animationExecutors.get(p.idx).shutdown();
 			repaint();			
 		}
 	}
@@ -627,10 +596,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}
 		if (occupied) {
 			map[p.y][p.x].isOccupied = true;
-			map[p.y][p.x].playerIdx = p.playerIdx;
+			map[p.y][p.x].playerIdx = p.idx;
 		} else {
 			map[p.y][p.x].isOccupied = false;
-			map[p.y][p.x].playerIdx = MapSquare.EMPTY;
+			map[p.y][p.x].playerIdx = -1;
 		}
 	}
 
@@ -686,8 +655,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		if (animate) {
 			p.allowedToMove = false;
 			p.animatePhase = 1;	// Start the animation	
-		    animationExecutors.put(p.playerIdx, Executors.newSingleThreadScheduledExecutor());
-		    animationExecutors.get(p.playerIdx).scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);		
+		    animationExecutors.put(p.idx, Executors.newSingleThreadScheduledExecutor());
+		    animationExecutors.get(p.idx).scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);		
 		} else {
 			p.allowedToMove = true;
 		}

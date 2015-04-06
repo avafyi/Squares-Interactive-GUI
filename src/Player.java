@@ -1,8 +1,5 @@
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -30,20 +27,18 @@ public class Player {
 	public boolean allowedToMove;
 	public int animatePhase;
 	private Timer moveTimer = null;
-	public int playerIdx;
+	public int idx;
 	public int speed;
 	
-	// Holds the textures for the avatar (more than one texture because of animations)
-	public Texture[] avatarTextures = null;
+	// Holds the textures for the player 
+	public Avatar avatar = null;
 	
-	public Player(MapSquare[][] sq, int direction, String avatar, boolean canIMove, int idx) {
-		
-		// Load avatar files
-		String[] excludedGroups = new String[] {"avatars"};
-		textures = new HashMap<String, TextureGroup>();
-		loadFiles(".png", excludedGroups);	
-		
-		
+	// Resources
+	public ResourceLoader resources = null;
+	
+	public Player(Avatar avatar, MapSquare[][] sq, int direction, boolean canIMove, int playerIdx) {	
+		// Save the avatar
+		this.avatar = avatar;
 		// Pick a pseudorandom location to place the player based on the given map
 		Integer[] numRows = new Integer[sq.length];
 		for (int i = 0; i < numRows.length; i++) {
@@ -60,7 +55,8 @@ public class Player {
 			}
 			Collections.shuffle(Arrays.asList(numCols));	// Get a random ordering of valid rows
 			for (int col : numCols) {
-				if (sq[row][col].playerIdx != -1 && sq[row][col].isOccupied == false) {
+				// Make sure the square isn't solid
+				if (sq[row][col].sqType != MapSquare.SquareType.SOLID && sq[row][col].isOccupied == false) {
 					foundSpot = true;
 					x = col;
 					y = row;
@@ -78,38 +74,10 @@ public class Player {
 		} else {
 			this.direction = direction;			
 		}
-		if (avatars.contains(avatar)) {
-			this.avatar = avatar;
-		} else {
-			this.avatar = DEFAULT_AVATAR;
-		}
 		animatePhase = 0;
 		speed = WALKING;
-		playerIdx = idx;		
+		idx = playerIdx;		
 		allowedToMove = canIMove;
-	}
-	
-	private void loadFiles(String fileType, String[] excludedGroups) {
-		FileLoader fileLoader = new FileLoader("res/xml/Textures.xml");
-		// Get all directories in the filesystem specified by the .xml file above
-		ArrayList<String> textureDirs = fileLoader.getFileDirectories();
-		
-		int textureCount = 0;	// Count how many textures were loaded
-		// Go through every directory and create a texture group for it
-		for(String dir : textureDirs) {
-			// If the directory is an excluded group or a sub-directory of 
-			// an excluded group, don't create a group for it
-			for (String excludedGroup : excludedGroups) {
-				if (dir.contains(excludedGroup));
-			}
-			String group = getLastBitFromUrl(dir);
-			TextureGroup tg = new TextureGroup(fileLoader.createFileGroup(group, fileType), group);
-			if (tg.textures != null) {
-				textures.put(group, tg);
-				textureCount++;
-			}			
-		}
-		System.out.println(textureCount + " texture groups loaded.");
 	}
 	
 	public void startMoveTimer() {		
