@@ -1,4 +1,10 @@
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
 
 public class MapSquare {
 	

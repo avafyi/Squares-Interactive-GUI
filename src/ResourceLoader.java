@@ -4,6 +4,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
 
 public class ResourceLoader {
 	

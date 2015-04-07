@@ -6,6 +6,13 @@ import java.awt.image.ImageFilter;
 import java.awt.image.ImageProducer;
 import java.awt.image.RGBImageFilter;
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+
 public class Transparency {
   public static Image makeColorTransparent
     (Image im, final Color color, final int alpha) {

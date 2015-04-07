@@ -1,5 +1,11 @@
 import java.awt.Dimension;
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
 
 public class ImageEditor {
 	public static Dimension getScaledDimension(Dimension imgSize, Dimension boundary, boolean scaleUp) {

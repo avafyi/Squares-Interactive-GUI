@@ -2,6 +2,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+
 public class AvatarGroup {
 	// All of the avatars in the group
 	public HashMap<String, Avatar> avatars = null;

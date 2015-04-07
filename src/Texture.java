@@ -1,5 +1,11 @@
 import java.io.File;
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
 
 public class Texture {
 	public File textureFile = null;

@@ -21,9 +21,8 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ScheduledFuture;
 
 import javax.imageio.ImageIO;
 import javax.swing.GrayFilter;
@@ -73,10 +72,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
 	
 	// ANIMATION 
-	public static final int ANIMATION_DELAY = 250;										// in milliseconds, represents the total theoretical time of the moving animation between two squares
-	public static final int ANIMATION_DELAY_STEP = ANIMATION_DELAY / Player.NUM_PHASES; // in milliseconds, how much time each phase of the moving animation should take	
-	private boolean phaseComplete = false;	// whether the animation phase has completed	
-	Hashtable<Integer, ScheduledExecutorService> animationExecutors = new Hashtable<Integer, ScheduledExecutorService>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
+//	public static final int ANIMATION_DELAY = 250;										// in milliseconds, represents the total theoretical time of the moving animation between two squares
+//	public static final int ANIMATION_DELAY_STEP = ANIMATION_DELAY / Player.NUM_PHASES; // in milliseconds, how much time each phase of the moving animation should take	
+//	private boolean phaseComplete = false;	// whether the animation phase has completed	
+//	Hashtable<Integer, ScheduledFuture<?>> animationHandlers = new Hashtable<Integer, ScheduledFuture<?>>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
 
 	// General Level variables
 //	private int currentMap = IN;
@@ -90,6 +89,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 //	private Point[][] roomSquaresCoords = null;
 	private BufferedImage roomBackgroundImage = null;
 	private MapSquare[][] mapSquares = null;
+	
+//	private ThreadListener moveListener = null;
+//	private Thread moveThread = null;
 	
 //	public static final int IN = 0;	// Level ID number
 	
@@ -116,7 +118,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		// Create a resource loader so we can get textures
 		resLoad = new ResourceLoader();		
 		// Create the level
-		level = new Map(resLoad, MAP_LEVEL, CANVAS_WIDTH, CANVAS_HEIGHT, MAP_LAYERS, MAP_DIM);
+		level = new MapEditor(resLoad, MAP_LEVEL, CANVAS_WIDTH, CANVAS_HEIGHT, MAP_LAYERS, MAP_DIM);
 		// Allow for easy access to the map squares
 		mapSquares = level.map.squares;
 		// Create a static background image for the level
@@ -152,7 +154,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 					ai_players = newAI_players;
 					break;
 				}
-				updateMap(mapSquares, ai_players[ai], true);					
+				Player currAI = ai_players[ai];
+				changeMapOccupation(currAI.x, currAI.y, currAI.idx, true);					
 			}
 			// Configure a timer to automatically move the AI players
 			autoMoveTimer = new Timer();
@@ -171,8 +174,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		} else {
 			// Create a new player and update the map to show it
 //			player = new Player(avatars.getRandomAvatar(), mapSquares, Player.DOWN, true, ++num_players);
-			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.DOWN, true, ++num_players);			
-			updateMap(mapSquares, player, true);			
+			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.Move.DOWN, true, ++num_players);			
+			changeMapOccupation(player.x, player.y, player.idx, true);			
 		}		
 	}
 	
@@ -505,13 +508,13 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 
 		if (p.animatePhase > 0) {
 			int animationStep = (MAP_DIM / Player.NUM_PHASES) * p.animatePhase;
-			if (p.direction == Player.RIGHT) {
+			if (p.direction == Player.Move.RIGHT) {
 				player_x += animationStep;		
-			} else if (p.direction == Player.UP) {
+			} else if (p.direction == Player.Move.UP) {
 				player_y -= animationStep;								
-			} else if (p.direction == Player.LEFT) {
+			} else if (p.direction == Player.Move.LEFT) {
 				player_x -= animationStep;	
-			} else if (p.direction == Player.DOWN) {	
+			} else if (p.direction == Player.Move.DOWN) {	
 				player_y += animationStep;	
 			}				
 			String textureName = p.direction + "-" + ((p.animatePhase % 2) + 1) + ".png";
@@ -519,7 +522,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			if (t != null) {
 				drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
 			}
-			phaseComplete = true;
+			// We have drawn the latest phase of the animation, update the player
+			p.inAnimationPhase = false;	
 		} else {		
 			String textureName = p.direction + ".png";
 			Texture t = p.avatar.getTextureWithName(textureName);
@@ -529,138 +533,137 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}
 	}
 
-	class Animation extends TimerTask{
-		private Player p = null;
-		private int speedToggle;
-		
-		public Animation(Player p) {
-			this.p = p;
-			speedToggle = p.speed;
-		}
-		public void run() {
-			// If the player is walking, the animation will occur every other run()
-			if (--speedToggle <= 0) { 
-				speedToggle = p.speed;	// Update the speed of the player in case they started sprinting during the animation
-				animatePlayer(p);
-			}
-		}
-	}
+//	class Animation extends TimerTask{
+//		private Player p = null;
+//		private int speedToggle;
+//		
+//		public Animation(Player p) {
+//			this.p = p;
+//			speedToggle = p.speed;
+//		}
+//		public void run() {
+//			// If the player is walking, the animation will occur every other run()
+//			if (--speedToggle <= 0) { 
+//				speedToggle = p.speed;	// Update the speed of the player in case they started sprinting during the animation
+//				animatePlayer(p);
+//			}
+//		}
+//	}
 	
 	// This sequence will have to be modified so that both the source and destination tiles
 	// are considered to be occupied during the animation in order to reserve the destination
 	// so that no other player can try to occupy it during the animation sequence
-	public void animatePlayer(Player p) {	
-		if (p == null) {
-			return;
-		}
-		boolean endPhases = false;
-		if (p.animatePhase >= Player.NUM_PHASES) {
-			endPhases = true;
-		}		
-		if (phaseComplete) {
-			phaseComplete = false;
-			p.animatePhase++;
-			repaint();
-		}	
-		if (endPhases) {
-			
-			// Update the map to indicate the player has moved
-			updateMap(mapSquares, p, false);
-			
-			// Now that the animation has completed, we can consider the player to be at the new tile
-			if 		(p.direction == Player.RIGHT)	p.x++;		
-			else if (p.direction == Player.UP)		p.y--;								
-			else if (p.direction == Player.LEFT)	p.x--;
-			else if (p.direction == Player.DOWN)	p.y++;	
-			
-			// Update the map to indicate the player's new position
-			updateMap(mapSquares, p, true);
-			
-			p.animatePhase = 0;	// Reset to default of no animation			
-			p.allowedToMove = true; // Let the player move again now that the animation is complete
-			animationExecutors.get(p.idx).shutdown();
-			repaint();			
-		}
-	}
-	
-	/**
-	 * Updates the provided map to indicate whether a player has left or entered a map square
-	 * 
-	 * @param map		The map to update
-	 * @param p			The player being moved
-	 * @param occupied	Whether or not the player's position is being occupied or reset to not occupied
-	 */
-	private void updateMap(MapSquare[][] map, Player p, boolean occupied) {
-		if (p == null) {
-			return;
-		}
-		if (occupied) {
-			map[p.y][p.x].isOccupied = true;
-			map[p.y][p.x].playerIdx = p.idx;
-		} else {
-			map[p.y][p.x].isOccupied = false;
-			map[p.y][p.x].playerIdx = -1;
-		}
-	}
+//	public void animatePlayer(Player p) {	
+//		if (p == null) {
+//			return;
+//		}
+//		boolean endPhases = false;
+//		if (p.animatePhase >= Player.NUM_PHASES) {
+//			endPhases = true;
+//		}		
+//		if (phaseComplete) {
+//			phaseComplete = false;
+//			p.animatePhase++;
+//			repaint();
+//		}	
+//		if (endPhases) {
+//			
+//			// Update the map to indicate the player has moved
+//			updatePlayerLocation(mapSquares, p, false);
+//			
+//			// Now that the animation has completed, we can consider the player to be at the new tile
+//			if 		(p.direction == Player.RIGHT)	p.x++;		
+//			else if (p.direction == Player.UP)		p.y--;								
+//			else if (p.direction == Player.LEFT)	p.x--;
+//			else if (p.direction == Player.DOWN)	p.y++;	
+//			
+//			// Update the map to indicate the player's new position
+//			updatePlayerLocation(mapSquares, p, true);
+//			
+//			p.animatePhase = 0;	// Reset to default of no animation			
+//			p.allowedToMove = true; // Let the player move again now that the animation is complete
+//			animationHandlers.get(p.idx).cancel(true);
+//			repaint();			
+//		}
+//	}
+//	
+//	/**
+//	 * Updates the provided map to indicate whether a player has left or entered a map square
+//	 * 
+//	 * @param map		The map to update
+//	 * @param p			The player being moved
+//	 * @param occupied	Whether or not the player's position is being occupied or reset to not occupied
+//	 */
+//	private void updateMapSquareOccupation(Player p, boolean moving) {
+//		if (moving) {
+//			mapSquares[p.y][p.x].isOccupied = true;
+//			mapSquares[p.y][p.x].playerIdx = p.idx;
+//		} else {
+//			
+//		}
+//	}
 
-	private void movePlayer(int direction, Player p) {
-		if (p == null || !p.allowedToMove) {
-			return;		// Make sure we have a player to move and that they are allowed to move
-		}
-		boolean animate = false;
-		// If the player is not current facing the direction specified via
-		// keyboard input, then turn them to face that direction
-		if ( p.direction != direction ) {
-			p.direction = direction;
-		} else {
-			if ( p.y < 0 || p.x < 0 || p.y >= mapSquares.length || p.x >= mapSquares[p.y].length ) {
-				return;
-			}
-			// for each direction of movement, check to see that the destination square is not a wall and is not occupied by another player			
-			switch (direction) {
-			case Player.RIGHT:
-				// Check array bounds
-				if ( p.x + 1 >= mapSquares[p.y].length ) { 
-					break;
-				} else if ( mapSquares[p.y][p.x + 1].playerIdx != -1 && mapSquares[p.y][p.x + 1].isOccupied == false ) {
-					animate = true;	
-				}
-				break;
-			case Player.UP:
-				// Check array bounds
-				if ( p.y <= 0 || p.x < 0) { 
-					break;
-				} else if ( mapSquares[p.y - 1][p.x].playerIdx != -1 && mapSquares[p.y - 1][p.x].isOccupied == false ) {
-					animate = true;	
-				}
-				break;
-			case Player.LEFT:
-				// Check array bounds
-				if ( p.x <= 0  || p.y < 0) { 
-					break;
-				}else if ( mapSquares[p.y][p.x - 1].playerIdx != -1 && mapSquares[p.y][p.x - 1].isOccupied == false ) {
-					animate = true;	
-				}	
-				break;
-			case Player.DOWN:
-				// Check array bounds
-				if ( p.y + 1 >= mapSquares.length) { 
-					break;
-				}else if ( mapSquares[p.y + 1][p.x].playerIdx != -1 && mapSquares[p.y + 1][p.x].isOccupied == false ) {
-					animate = true;	
-				}
-				break;
-			}		
-		}//if (mapSquares[p.x + 1][p.y] )
-		if (animate) {
-			p.allowedToMove = false;
-			p.animatePhase = 1;	// Start the animation	
-		    animationExecutors.put(p.idx, Executors.newSingleThreadScheduledExecutor());
-		    animationExecutors.get(p.idx).scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);		
-		} else {
-			p.allowedToMove = true;
-		}
-	}
+//	private void movePlayer(int direction, Player p) {
+//		if (p == null || !p.allowedToMove) {
+//			return;		// Make sure we have a player to move and that they are allowed to move
+//		}
+//		boolean animate = false;
+//		// If the player is not current facing the direction specified via
+//		// keyboard input, then turn them to face that direction
+//		if ( p.direction != direction ) {
+//			p.direction = direction;
+//		} else {
+//			if ( p.y < 0 || p.x < 0 || p.y >= mapSquares.length || p.x >= mapSquares[p.y].length ) {
+//				return;
+//			}
+//			// for each direction of movement, check to see that the destination square is not a wall and is not occupied by another player			
+//			switch (direction) {
+//			case Player.RIGHT:
+//				// Check array bounds
+//				if ( p.x + 1 >= mapSquares[p.y].length ) { 
+//					break;
+//				} else if ( mapSquares[p.y][p.x + 1].sqType != MapSquare.SquareType.SOLID && mapSquares[p.y][p.x + 1].isOccupied == false ) {
+//					animate = true;	
+//				}
+//				break;
+//			case Player.UP:
+//				// Check array bounds
+//				if ( p.y <= 0 || p.x < 0) { 
+//					break;
+//				} else if ( mapSquares[p.y - 1][p.x].sqType != MapSquare.SquareType.SOLID && mapSquares[p.y - 1][p.x].isOccupied == false ) {
+//					animate = true;	
+//				}
+//				break;
+//			case Player.LEFT:
+//				// Check array bounds
+//				if ( p.x <= 0  || p.y < 0) { 
+//					break;
+//				}else if ( mapSquares[p.y][p.x - 1].sqType != MapSquare.SquareType.SOLID && mapSquares[p.y][p.x - 1].isOccupied == false ) {
+//					animate = true;	
+//				}	
+//				break;
+//			case Player.DOWN:
+//				// Check array bounds
+//				if ( p.y + 1 >= mapSquares.length) { 
+//					break;
+//				}else if ( mapSquares[p.y + 1][p.x].sqType != MapSquare.SquareType.SOLID && mapSquares[p.y + 1][p.x].isOccupied == false ) {
+//					animate = true;	
+//				}
+//				break;
+//			}		
+//		}
+//		if (animate) {
+//			p.allowedToMove = false;
+//			p.animatePhase = 1;	// Start the animation
+//			ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+//			ScheduledFuture<?> taskHandler = scheduledExecutor.scheduleAtFixedRate(new Animation(p), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);
+//		    animationHandlers.put(p.idx, taskHandler);
+//		    Thread futureCheck = new Thread(new AnimationCompletionChecker(taskHandler));
+//		    futureCheck.start();	
+//		} else {
+//			p.allowedToMove = true;
+//		}
+//	}
 
 	/** The entry main() method */
 	public static void main(String[] args) {
@@ -689,21 +692,91 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}
     	if (player.allowedToMove) {
 	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
-	        	movePlayer(Player.RIGHT, player);
+	        	movePlayer(Player.Move.RIGHT, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
-	        	movePlayer(Player.UP, player);
+	        	movePlayer(Player.Move.UP, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
-	        	movePlayer(Player.LEFT, player);
+	        	movePlayer(Player.Move.LEFT, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
-	        	movePlayer(Player.DOWN, player);
+	        	movePlayer(Player.Move.DOWN, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
-	        	int modVal = Player.RIGHT + 1;
+	        	int modVal = Player.Move.RIGHT + 1;
 	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
 	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
-	        	player.direction = (player.direction + 1) % (Player.RIGHT + 1);
+	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
 	        }
 	        repaint();
 		}
+	}
+	
+	private void movePlayer(int direction, Player p) {
+		// Ask for permission to move - claim the destination map square if allowed to move
+		
+		// If not allowed to move, return
+
+		// Get the location where the player will be located but don't actually 
+		// update the player's location - the old one needs to be maintained for
+		// the duration of the movement animation
+		Point claimedSquareLocation = getNewPlayerPosition(p, direction);
+		// Update the map to show that the destination square has been claimed
+		changeMapOccupation(claimedSquareLocation.x, claimedSquareLocation.y, p.idx, true);
+		// Move the player
+		AnimationUpdater aniUp = new AnimationUpdater();
+		aniUp.setPlayer(p);
+		MovePlayer.movePlayer(mapSquares, direction, p, aniUp);
+	}
+	
+	public void changeMapOccupation(int playerX, int playerY, int playerIdx, Boolean occupied) {
+		mapSquares[playerY][playerX].isOccupied = occupied;
+		mapSquares[playerY][playerX].playerIdx = occupied ? playerIdx : -1;
+	}
+	
+	public class AnimationUpdater implements Callable<Void> {
+		private Player player = null;
+		
+		// Call this before using .call()
+		public void setPlayer(Player p) {
+			player = p;			
+		}
+		
+		@Override
+		public Void call() throws Exception {
+			if (player != null) {
+				// If the player has finished it's animation, it is allowed to move again
+				if (player.allowedToMove) {					
+					// update the player's location
+					updatePlayerLocation(player);
+				}
+			}
+			// Update the display
+			repaint();
+			return null;
+		}		
+	}
+	
+	private void updatePlayerLocation(Player player) {
+		// If the player is not allowed to move, then they are
+		// still being animated
+		if (!player.allowedToMove) {
+			return;
+		}
+		// Update the map to indicate that the player is no longer at it's old location
+		changeMapOccupation(player.x, player.y, player.idx, false);
+		// Animation has been completed at this point, update the player's location
+		Point newLocation = getNewPlayerPosition(player, player.direction);
+		player.x = newLocation.x;
+		player.y = newLocation.y;
+	}
+	
+	private Point getNewPlayerPosition(Player player, int direction){
+		Point newPoint = new Point(player.x, player.y);
+		switch(direction) {
+			case Player.Move.RIGHT: newPoint.x++;	break;
+			case Player.Move.UP:	newPoint.y--;	break;
+			case Player.Move.LEFT:	newPoint.x--;	break;
+			case Player.Move.DOWN:	newPoint.y++;	break;
+		}
+		return newPoint;
 	}
 
 	@Override

@@ -1,4 +1,11 @@
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+
 public class Avatar {
 	
 	// The name of the avatar
@@ -15,7 +22,7 @@ public class Avatar {
 	
 	public Texture getTextureWithName(String name) {
 		// Look through all textures in the group
-		for (Texture t : textureGroup.textures) {
+		for (Texture t : textureGroup.textures.values()) {
 			// If one of the textures has the same name
 			if (t.textureName.equals(name)) {
 				// Return the texture

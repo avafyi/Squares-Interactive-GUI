@@ -1,4 +1,11 @@
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+
 public class GlobalHelper {
 	
 	// http://stackoverflow.com/questions/4050087/how-to-obtain-the-last-path-segment-of-an-uri
