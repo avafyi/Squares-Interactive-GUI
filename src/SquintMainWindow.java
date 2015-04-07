@@ -17,12 +17,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ScheduledFuture;
 
 import javax.imageio.ImageIO;
 import javax.swing.GrayFilter;
@@ -163,9 +161,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				@Override
 				public void run() {
 					// Go through all ai players and make them move in a random direction
-					for(Player p : ai_players) {
-						if (p.allowedToMove) {
-							movePlayer((int)(Math.random()*4), p);	
+					for(Player player : ai_players) {
+						if (player.allowedToMove) {
+							movePlayer((int)(Math.random()*4), player);	
 						}
 						repaint();		
 					}				
@@ -403,8 +401,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		// If the program is running in AI mode, draw each of the players in the list of AIs
 		// Otherwise just draw the single, user-controlled player
 		if (modeIsAI) {
-			for(Player p : ai_players) {
-				drawPlayer(p, g2d);
+			for(Player player : ai_players) {
+				drawPlayer(player, g2d);
 			}
 		} else {
 			drawPlayer(player, g2d);	// Draw the player
@@ -499,37 +497,50 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	    return resizedImage;
 	}
 
-	private void drawPlayer(Player p, Graphics g) {	
-		if (p == null) {
+	private void drawPlayer(Player player, Graphics g) {	
+		if (player == null) {
 			return;
 		}
-		int player_x = p.x * MAP_DIM;// + LEFT_WALL_OFFSET;
-		int player_y = p.y * MAP_DIM;// + TOP_WALL_OFFSET;	
+		int player_x = player.x * MAP_DIM;// + LEFT_WALL_OFFSET;
+		int player_y = player.y * MAP_DIM;// + TOP_WALL_OFFSET;	
+		String animationSuffix = "";
 
-		if (p.animatePhase > 0) {
-			int animationStep = (MAP_DIM / Player.NUM_PHASES) * p.animatePhase;
-			if (p.direction == Player.Move.RIGHT) {
-				player_x += animationStep;		
-			} else if (p.direction == Player.Move.UP) {
-				player_y -= animationStep;								
-			} else if (p.direction == Player.Move.LEFT) {
-				player_x -= animationStep;	
-			} else if (p.direction == Player.Move.DOWN) {	
-				player_y += animationStep;	
-			}				
-			String textureName = p.direction + "-" + ((p.animatePhase % 2) + 1) + ".png";
-			Texture t = p.avatar.getTextureWithName(textureName);
-			if (t != null) {
-				drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
+		if (player.animatePhase > 0) {
+			if (player.isJumping) {
+				// Calculate the halfway poit in pixels
+				int halfwayDisplacement = (MAP_DIM / Player.JUMP_PHASES) * Player.JUMP_PHASES/2;
+				// Calculate the amount of pixels away from standing we are at this phase of the animation
+				int displacement = (MAP_DIM / Player.JUMP_PHASES) * player.animatePhase;
+				if (displacement > halfwayDisplacement) {
+					displacement = halfwayDisplacement-(displacement-halfwayDisplacement);
+					// we are jumping, not falling
+					if (displacement < 0) {
+						displacement = 0;
+					}
+				}
+				// Jumping up
+				player_y -= displacement;	
+			} else {
+				int animationStep = (MAP_DIM / Player.MOVE_PHASES) * player.animatePhase;
+				if (player.direction == Player.Move.RIGHT) {
+					player_x += animationStep;		
+				} else if (player.direction == Player.Move.UP) {
+					player_y -= animationStep;								
+				} else if (player.direction == Player.Move.LEFT) {
+					player_x -= animationStep;	
+				} else if (player.direction == Player.Move.DOWN) {	
+					player_y += animationStep;	
+				}				
+				animationSuffix = "-" + ((player.animatePhase % 2) + 1);
 			}
 			// We have drawn the latest phase of the animation, update the player
-			p.inAnimationPhase = false;	
-		} else {		
-			String textureName = p.direction + ".png";
-			Texture t = p.avatar.getTextureWithName(textureName);
-			if (t != null) {
-				drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
-			}
+			player.inAnimationPhase = false;
+			player.animatePhase++;
+		}
+		String textureName = player.direction + animationSuffix + ".png";
+		Texture t = player.avatar.getTextureWithName(textureName);
+		if (t != null) {
+			drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
 		}
 	}
 
@@ -699,6 +710,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	        	movePlayer(Player.Move.LEFT, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
 	        	movePlayer(Player.Move.DOWN, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_SPACE)) {
+	        	player.isJumping = true;
+	        	movePlayer(player.direction, player);
 	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
 	        	int modVal = Player.Move.RIGHT + 1;
 	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
@@ -709,21 +723,37 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}
 	}
 	
-	private void movePlayer(int direction, Player p) {
-		// Ask for permission to move - claim the destination map square if allowed to move
+	private void movePlayer(int direction, Player player) {
+		// A callable method so we can repaint during animation
+		AnimationUpdater aniUp = null;
 		
-		// If not allowed to move, return
-
-		// Get the location where the player will be located but don't actually 
-		// update the player's location - the old one needs to be maintained for
-		// the duration of the movement animation
-		Point claimedSquareLocation = getNewPlayerPosition(p, direction);
-		// Update the map to show that the destination square has been claimed
-		changeMapOccupation(claimedSquareLocation.x, claimedSquareLocation.y, p.idx, true);
-		// Move the player
-		AnimationUpdater aniUp = new AnimationUpdater();
-		aniUp.setPlayer(p);
-		MovePlayer.movePlayer(mapSquares, direction, p, aniUp);
+		// Check if we are simply changing direction or animating
+		if (player.direction == direction) {
+			// See if we are moving instead of jumping
+			if (!player.isJumping) {
+				// Holds the destination location of the player
+				Point newSquareLoc = getNewPlayerPosition(player, direction);		
+				// Holds the map square at the destination point
+				MapSquare destinationSquare = level.getMapSquare(newSquareLoc);
+				// Make sure there is a square at the destination
+				if (destinationSquare == null) {
+					return;
+				}
+				// Ask for permission to move - host must claim the destination map square if client allowed to move
+				if(!MoveRequest.canIMoveHere(destinationSquare, newSquareLoc, level.mapCols, level.mapRows)) {
+					return;
+				}
+				// Get the location where the player will be located but don't actually 
+				// update the player's location - the old one needs to be maintained for
+				// the duration of the movement animation
+				// Update the map to show that the destination square has been claimed
+				changeMapOccupation(newSquareLoc.x, newSquareLoc.y, player.idx, true);
+			}			
+			// Move the player
+			aniUp = new AnimationUpdater();
+			aniUp.setPlayer(player);
+		}
+		MovePlayer.movePlayer(direction, player, aniUp);
 	}
 	
 	public void changeMapOccupation(int playerX, int playerY, int playerIdx, Boolean occupied) {
@@ -735,8 +765,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		private Player player = null;
 		
 		// Call this before using .call()
-		public void setPlayer(Player p) {
-			player = p;			
+		public void setPlayer(Player player) {
+			this.player = player;			
 		}
 		
 		@Override
@@ -755,9 +785,9 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void updatePlayerLocation(Player player) {
-		// If the player is not allowed to move, then they are
-		// still being animated
-		if (!player.allowedToMove) {
+		if (player.isJumping) {
+			// If we were jumping, we are done now
+			player.isJumping = false;
 			return;
 		}
 		// Update the map to indicate that the player is no longer at it's old location
@@ -785,7 +815,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
     	if (e.getKeyCode() == KeyEvent.VK_SHIFT ) {
     		player.speed = Player.WALKING;
     	}
-//        System.out.println("keyReleased");
 	}
 
 	@Override

@@ -1,7 +1,8 @@
 import java.awt.Point;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -19,13 +20,13 @@ public class Map {
 	// Map Constants
 	
 	// Map Attributes
-	public static int mapId;
-	public static int mapWidth;		// In textures squares
-	public static int mapHeight;	// In textures squares
-	public static int mapLayers;	// Number of layers of the textures (Image layers)
-	public static int mapSquareDim;	// Size of a map square (in pixels)
-	public static int mapRows;		// The number of logical rows in the map (mapHeight / mapSquareDim)
-	public static int mapCols;		// The number of logical columns in the map (mapWidth / mapSquareDim)
+	public int mapId;
+	public int mapWidth;		// In textures squares
+	public int mapHeight;		// In textures squares
+	public int mapLayers;		// Number of layers of the textures (Image layers)
+	public int mapSquareDim;	// Size of a map square (in pixels)
+	public int mapRows;			// The number of logical rows in the map (mapHeight / mapSquareDim)
+	public int mapCols;			// The number of logical columns in the map (mapWidth / mapSquareDim)
 		
 	// Wall Orientations
 	public static enum WallOrientation { LEFT, RIGHT, TOP, BOTTOM };
@@ -191,13 +192,27 @@ public class Map {
 		double random = Math.random();
 		Random r = new Random();
 		int textureIdx = -1;
+		// Grab just the textures and sort them
+		ArrayList<Texture> textures = new ArrayList<Texture>(tg.textures.values());
+		Collections.sort(textures, new GlobalHelper.TextureComparator());
+		// Get the number of textures
+		int numTextues = textures.size();
 		// get a random texture index
+		// TODO have it look for textures named normal and special and instead of doing a hard cutoff at numTextures/2, use
+		// the counts of each type normal and special as cutoffs and make a list of their indexes or something, choose from those
 		if (random <= seed.normPercent) {
-			textureIdx = (int)(r.nextInt(tg.textures.values().size()/2));
+			textureIdx = (int)(r.nextInt(numTextues/2));
 		} else {
-			textureIdx = (int)(r.nextInt(tg.textures.values().size() - tg.textures.values().size()/2) + tg.textures.values().size()/2);
+			textureIdx = (int)(r.nextInt(numTextues - numTextues/2) + numTextues/2);
 		}
-		return (Texture)tg.textures.values().toArray()[textureIdx]; 
+		return textures.get(textureIdx); 
+	}
+	
+	public MapSquare getMapSquare(Point p) {
+		if (p.x < 0 || p.y < 0 || p.x >= mapCols || p.y >= mapRows) {
+			return null;
+		}
+		return map.squares[p.y][p.x];
 	}
 	
 	/**

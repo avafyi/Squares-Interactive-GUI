@@ -11,7 +11,10 @@ public class MapEditor extends Map {
 
 	public MapEditor(ResourceLoader resLoader, int map_id, int map_width, int map_height, int num_layers, int squareDim) {
 		// Create the map
-		super(resLoader, map_id, map_width, map_height, num_layers, squareDim);			
+		super(resLoader, map_id, map_width, map_height, num_layers, squareDim);		
+		
+		// TEMPORARY - these should be called by the maker of the map editor, not by the map editor
+		addTerrain(3,3,13,13,"wood_floor", new Seed(15,6));
 	} 
 	
 	/**

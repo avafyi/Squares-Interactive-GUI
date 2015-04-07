@@ -1,3 +1,5 @@
+import java.util.Comparator;
+
 
 /**
  * 
@@ -22,5 +24,11 @@ public class GlobalHelper {
 		}
 		return segment;
 	}	
+	public static class TextureComparator implements Comparator<Texture> {
+	    @Override
+	    public int compare(Texture t1, Texture t2) {
+	        return t1.textureName.compareTo(t2.textureName);
+	    }
+	}
 	
 }

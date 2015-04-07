@@ -13,27 +13,28 @@ import java.util.concurrent.TimeUnit;
 
 public class MovePlayer extends AnimatePlayer {
 	
-	public static ScheduledFuture<?> movePlayer(MapSquare[][] map, int direction, Player p, Callable<?> updateDisplayCallable) {
-		if (p == null || !p.allowedToMove) {
+	public static ScheduledFuture<?> movePlayer(int direction, Player player, Callable<?> updateDisplayCallable) {
+		if (player == null || !player.allowedToMove) {
 			return null;		// Make sure we have a player to move and that they are allowed to move
 		}
 		boolean animate = false;
 		// If the player is not current facing the direction specified via
 		// keyboard input, then turn them to face that direction
-		if ( p.direction != direction ) {
-			p.direction = direction;
+		if (player.direction != direction) {
+			player.direction = direction;
 		} else {
 			animate = true;	
 		}
 		if (animate) {
-			p.allowedToMove = false;
-			p.animatePhase = 1;	// Start the animation
+			player.allowedToMove = false;
+			player.animatePhase = 1;	// Start the animation
 			ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-			ScheduledFuture<?> taskHandler = scheduledExecutor.scheduleAtFixedRate(new Animation(p, updateDisplayCallable), 0, ANIMATION_DELAY_STEP, TimeUnit.MILLISECONDS);
-		    animationHandlers.put(p.idx, taskHandler);
+			int delay = player.isJumping ? ANIMATION_DELAY_JUMP : ANIMATION_DELAY_STEP;
+			ScheduledFuture<?> taskHandler = scheduledExecutor.scheduleAtFixedRate(new Animators.MoveAnimation(player, updateDisplayCallable), 0, delay, TimeUnit.MILLISECONDS);
+		    animationHandlers.put(player.idx, taskHandler);
 		} else {
-			p.allowedToMove = true;
+			player.allowedToMove = true;
 		}
-		return animationHandlers.get(p.idx);
+		return animationHandlers.get(player.idx);
 	}
 }

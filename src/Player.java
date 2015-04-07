@@ -17,12 +17,11 @@ public class Player {
 		public static final int LEFT = 1;
 		public static final int UP = 2;
 		public static final int RIGHT = 3;
-		public static final int SPIN_CC = 4;	// spin counter clockwise
-		public static final int SPIN_C = 5;		// spin clockwise
-	} 
+	}	
 	
 	public static final int MOVE_DELAY = 250; // in milliseconds
-	public static final int NUM_PHASES = 5;
+	public static final int MOVE_PHASES = 5;
+	public static final int JUMP_PHASES = 10;
 	
 	public static final int WALKING = 2;
 	public static final int RUNNING = 1;
@@ -39,6 +38,7 @@ public class Player {
 	public int idx;
 	public int speed;
 	public boolean inAnimationPhase;
+	public boolean isJumping;
 	
 	// Holds the textures for the player 
 	public Avatar avatar = null;
@@ -89,6 +89,7 @@ public class Player {
 		idx = playerIdx;		
 		allowedToMove = canIMove;
 		inAnimationPhase = false;
+		isJumping = false;
 	}
 	
 	public void startMoveTimer() {		
