@@ -2,7 +2,6 @@ import java.awt.Point;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -28,18 +27,48 @@ public class Map {
 	public int mapRows;			// The number of logical rows in the map (mapHeight / mapSquareDim)
 	public int mapCols;			// The number of logical columns in the map (mapWidth / mapSquareDim)
 		
-	// Wall Orientations
-	public static enum WallOrientation { LEFT, RIGHT, TOP, BOTTOM };
-	public static enum Corner { Q1, Q2, Q3, Q4 };	// The quadrant (2d plane) of the "empty" portion of the wall
+	// Wall 
+	public static class Wall { 
+		public static final String LEFT = "left";
+		public static final String RIGHT = "right";
+		public static final String TOP = "top";
+		public static final String BOTTOM = "bottom";
+		public String wall;
+		public Wall(String wall) {
+			this.wall = wall;
+		}
+	}
+	public static class Corner { 
+		public static final String BOT_LEFT = "q1";
+		public static final String BOT_RIGHT = "q2";
+		public static final String TOP_RIGHT = "q3";
+		public static final String TOP_LEFT = "q4";
+		public String corner;
+		public Corner(String corner) {
+			this.corner = corner;
+		}
+	}
+	public static class CornerSize { 
+		public static final String LARGE = "large";
+		public static final String SMALL = "small";
+		public String size;
+		public CornerSize(String size) {
+			this.size = size;
+		}
+	}
 	
 	// Map Layer Variables
 	// These layers are not strict, so a wall could be added to a shadow layer for example
-	public static class MAP_LAYER { 
+	public final class MapLayer { 
 		public static final int TRANSPARENT = 0;
 		public static final int TERRAIN = 1;
 		public static final int SHADOW = 2;
 		public static final int OBJECT = 3;
-		public static final int WALL = 4;
+		public static final int WALL = 3;	// Same layer as object
+		public int layer;
+		public MapLayer(int layer) {
+			this.layer = layer;
+		}
 	} 
 	// Used to store a ratio of normal to unique (the first half of a texture group is considered the normal half)
 	public final class Seed {
@@ -94,7 +123,7 @@ public class Map {
 		// Load the file groups from our file loader into our hashtable of texture groups
 		// exclude groups we do not want
 		map = generateBlankMap(mapLayers, mapCols, mapRows);	
-		addTransparentLayer(map, MAP_LAYER.TRANSPARENT);
+		addTransparentLayer(map, MapLayer.TRANSPARENT);
 	}
 
 	private void loadFiles(String fileType, String[] excludedGroups) {
@@ -171,14 +200,12 @@ public class Map {
 	// 4 1 5 5
 	// if randSeed == 0 			all normal
 	// if randSeed >= 1 && <= 10 	normal with unique
-	public void addLevelTerrain(MapArray map, int mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, Seed terrainSeed) {
-		// Get the texture layer for modification
-		Texture[][] layerTextures = map.textures[mapLayer];
+	public void addLevelTerrain(MapArray map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, Seed terrainSeed) {
 		// Get the textures
 		TextureGroup tg = textures.get(terrainType);
-		for (int row = startRow; row < endRow; row++) {
-			for (int col = startCol; col < endCol; col++) {
-				layerTextures[row][col] = getTextureUsingSeed(terrainSeed, tg);
+		for (int row = startRow; row <= endRow; row++) {
+			for (int col = startCol; col <= endCol; col++) {
+				map.textures[mapLayer.layer][row][col] = getTextureUsingSeed(terrainSeed, GlobalHelper.textureGroupToArrayList(tg));
 			}
 		}
 	}
@@ -188,15 +215,15 @@ public class Map {
 		return (textures.get(new Random().nextInt(textures.size())));
 	}
 	
-	private Texture getTextureUsingSeed(Seed seed, TextureGroup tg) {
+	private Texture getTextureUsingSeed(Seed seed, ArrayList<Texture> textures) {
 		double random = Math.random();
 		Random r = new Random();
 		int textureIdx = -1;
 		// Grab just the textures and sort them
-		ArrayList<Texture> textures = new ArrayList<Texture>(tg.textures.values());
-		Collections.sort(textures, new GlobalHelper.TextureComparator());
+		ArrayList<Texture> texturesCopy = new ArrayList<Texture>(textures);
+		Collections.sort(texturesCopy, new GlobalHelper.TextureComparator());
 		// Get the number of textures
-		int numTextues = textures.size();
+		int numTextues = texturesCopy.size();
 		// get a random texture index
 		// TODO have it look for textures named normal and special and instead of doing a hard cutoff at numTextures/2, use
 		// the counts of each type normal and special as cutoffs and make a list of their indexes or something, choose from those
@@ -205,7 +232,7 @@ public class Map {
 		} else {
 			textureIdx = (int)(r.nextInt(numTextues - numTextues/2) + numTextues/2);
 		}
-		return textures.get(textureIdx); 
+		return texturesCopy.get(textureIdx); 
 	}
 	
 	public MapSquare getMapSquare(Point p) {
@@ -217,42 +244,39 @@ public class Map {
 	
 	/**
 	 * 
-	 * @param row			The logical starting row coordinate on the level (textures)
-	 * @param col			The logical starting col coordinate on the level (textures)
-	 * @param orientation	Which wall type, also used to check start, end coordinates
-	 * @param len			The length of the wall, if the Corners are not null, they are included in the total len
-	 * @param layer			The textures layer to place the wall
-	 * @param lCorner		The corner on the left/top part of the wall (If null, no corner added)
-	 * @param rCorner		The corner on the right/bottom part of the wall (If null, no corner added)
 	 */
-	public void generateWall(MapArray map, int mapLayer, WallOrientation orientation, String wallType, Seed wallSeed, int row, int col, int length, Corner lCorner, Corner rCorner) {
-		// Get the texture layer for modification
-		Texture[][] layerTextures = map.textures[mapLayer];
+	public void generateWall(MapArray map, MapLayer mapLayer, Wall wallType, String wallGroup, Seed wallSeed, int row, int col, int end) {
 		// Get the textures
-		TextureGroup tg = textures.get(wallType);
-		// Individual Textures
-		Texture leftCorner;
-		Texture rightCorner;
-//		Texture 
-		switch (orientation) {
-			case LEFT:				
-				break;
-			case RIGHT:
-				break;
-			case TOP:
-				break;
-			case BOTTOM:
-				break;
-			default:
-				// Not a valid orientation
-				break;
-		}		
-		if (lCorner != null) {
-			
+		TextureGroup tg = textures.get(wallGroup);
+		// Get textures of the same type
+		ArrayList<Texture> similarTextures = tg.getTexturesLike(wallType.wall + "-");
+		
+		// Check if the wall goes across a row or down a column
+		if (wallType.wall == Wall.TOP || wallType.wall == Wall.BOTTOM) {
+			for (int c = col; c <= end; c++) {
+				// Add the wall texture
+				map.textures[mapLayer.layer][row][c] = getTextureUsingSeed(wallSeed, similarTextures);
+			}
+		} else {
+			for (int r = row; r <= end; r++) {
+				// Add the wall texture
+				map.textures[mapLayer.layer][r][col] = getTextureUsingSeed(wallSeed, similarTextures);
+			}
 		}
-		if (rCorner != null) {
-			
+	}
+	
+	public void generateCorner(MapArray map, MapLayer mapLayer, Corner cornerType, CornerSize cornerSize, String cornerGroup, int row, int col) {
+		// Get the textures
+		TextureGroup tg = textures.get(cornerGroup);
+		// Add the corner to the map
+		map.textures[mapLayer.layer][row][col] = getCornerTexture(tg, cornerType.corner, cornerSize.size);
+	}
+	
+	private Texture getCornerTexture(TextureGroup tg, String corner, String cornerType) {
+		if (tg == null || corner == null || corner.equals("") || cornerType == null || cornerType.equals("")) {
+			return null;
 		}
+		return tg.getTextureExact("corner-" + corner + "-" + cornerType + ".png");
 	}
 	
 	public void generateObject() {
@@ -263,186 +287,7 @@ public class Map {
 		
 	}
 	
-//	private void initRoom() {
-//		roomSquaresCoords = new Point[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS]; 	
-//		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
-//			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
-//				roomSquaresCoords[row][col] = new Point(col * MAP_DIM, row * MAP_DIM);
-//			}
-//		}		
-//		
-//		// Standard wall, floor, wall row
-//		final String[] wfw_row = new String[] {
-//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
-//		};
-//		// Wall, special floor, wall row
-//		final String[] wsfw1_row = new String[] {
-//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/5.png", "in_floor/1.png", "in_floor/5.png", "in_floor/0.png", "in_floor/4.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_walls/13.png", "transparent.png", "transparent.png"
-//		};
-//		// Wall, special floor, wall row
-//		final String[] wsfw2_row = new String[] {
-//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/1.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/2.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
-//		};
-//		// Wall, special floor, wall row
-//		final String[] wsfw3_row = new String[] {
-//			"transparent.png", "transparent.png", "in_walls/12.png", "in_floor/1.png", "in_floor/4.png", "in_floor/4.png", "in_floor/3.png", "in_floor/2.png", "in_floor/4.png", "in_floor/5.png", "in_floor/3.png", "in_floor/5.png", "in_floor/2.png", "in_walls/13.png", "transparent.png", "transparent.png"
-//		};
-//		final String[] left_shade = new String[] {
-//			"transparent.png", "transparent.png", "", "in_shadows/6.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"
-//		};
-//		final String[] empty_row = new String[] {
-//			"transparent.png", "transparent.png", "", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"	
-//		};
-//		final String[] top_row = new String[] {
-//			"transparent.png", "transparent.png", "in_walls/0.png", "", "in_walls/3.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/1.png", "in_walls/4.png", "", "transparent.png", "transparent.png"	
-//		};
-//		final String[] transparent_row = new String[] {
-//				"transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png", "transparent.png"	
-//		};
-//		roomSquaresImageURLs = new String[][][] {
-//			{
-//				empty_row,	// top row
-//				empty_row,	// top row
-//				empty_row,	// top row
-//				wsfw2_row,	// middle row
-//				wfw_row,
-//				wsfw1_row,
-//				wfw_row,
-//				wsfw3_row,
-//				wsfw1_row,
-//				wsfw2_row,
-//				wfw_row,
-//				wsfw1_row,
-//				{"transparent.png", "transparent.png", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/2.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "transparent.png", "transparent.png"}, 	// bottom row
-//				{"transparent.png", "transparent.png", "", "", "", "", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "in_floor/5.png", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row (doorway flooring)
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//			},
-//			{
-//				top_row,	// top row
-//				empty_row,	// top row
-//				empty_row,	// top row
-//				{"transparent.png", "transparent.png", "", "in_shadows/0.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "in_shadows/1.png", "", "transparent.png", "transparent.png"},
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				left_shade,	// middle row
-//				{"transparent.png", "transparent.png", "in_walls/14.png", "", "", "", "", "", "", "", "", "", "in_walls/15.png", "", "transparent.png", "transparent.png"},	// bottom row
-//				{"transparent.png", "transparent.png", "", "", "in_walls/17.png", "in_walls/18.png", "in_walls/11.png", "in_shadows/3.png", "", "in_walls/10.png", "in_walls/18.png", "in_walls/17.png", "", "", "transparent.png", "transparent.png"},	// bottom row
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//			},
-//			{
-//				empty_row,	// top row
-//				empty_row,	// top row
-//				empty_row,	// top row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				empty_row,	// middle row
-//				{"transparent.png", "transparent.png", "", "in_shadows/8.png", "", "", "", "", "", "", "", "", "", "", "", "transparent.png", "transparent.png"},	// bottom row
-//				empty_row,	// bottom row
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//				transparent_row,
-//			}
-//		};
-//		mapSquares = new MapSquare[NUM_SQUARES_DOWN][NUM_SQUARES_ACROSS];
-//		for (int row = 0; row < NUM_SQUARES_DOWN; row++) {
-//			for (int col = 0; col < NUM_SQUARES_ACROSS; col++) {	
-//				// Check if any of the layers contains a wall, if so then create a MapSquare that cannot be occupied by a player
-//				// If any square in the first layer has an imageURL of "" then that means that it is a part of a larger object
-//				
-//				// If we run across a textures square that has already been initialized (like in the case of a wall texture that takes up
-//				// more than one room square) then ignore this square and continue on to the next column
-//				if (mapSquares[row][col] != null) {
-//					continue;
-//				}
-//				findSolidsLoop:
-//				for (String[][] layer : roomSquaresImageURLs) {
-//					boolean isSolid = false;
-//					for(String solid : SOLIDS) {
-//						if (layer[row][col].contains(solid)) {	
-//							isSolid = true;
-//						}
-//					}
-//					if (isSolid) {		
-//						File imageSrc = new File(IMAGES_DIR + layer[row][col]);					
-//						BufferedImage bimg = null;
-//						try {
-//							bimg = ImageIO.read(imageSrc);
-//						} catch (IOException e) {
-//							e.printStackTrace();
-//						}
-//						if (bimg != null) {
-//							int numSquaresWide = bimg.getWidth() / MAP_DIM;
-//							int numSquaresTall = bimg.getHeight() / MAP_DIM;
-//							for (int c = 0; c < numSquaresWide; c++) {
-//								for (int r = 0; r < numSquaresTall; r++) {
-//									// Because of how the bottom left corner wall, wall image 14, is textured, the top right textures square is not solid
-//									// the same goes for the bottom right corner wall, wall image 15
-//									if ((c == 1 && r == 0 && layer[row][col].contains("in_walls/14.png")) 
-//											|| (c == 0 && r == 0 && layer[row][col].contains("in_walls/15.png"))) 
-//									{
-//										continue;	// Skip this textures square
-//									}
-//									mapSquares[row+r][col+c] = new MapSquare(true, MapSquare.SOLID, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
-//								}	
-//							}
-//						}
-//						break findSolidsLoop;
-//					}
-//				}
-//				if (mapSquares[row][col] == null) {
-//					mapSquares[row][col] = new MapSquare(false, MapSquare.EMPTY, roomSquaresCoords[row][col], new Dimension(MAP_DIM, MAP_DIM));
-//				}
-//			}
-//		}	
-//		roomBackgroundImage = makeImage(roomSquaresImageURLs, roomSquaresCoords);
-//	}
-//	
-//	public BufferedImage makeImage(String[][][] imageURLs, Point[][] coords) {
-//		BufferedImage bImg = new BufferedImage(CANVAS_WIDTH, CANVAS_HEIGHT, 
-//				BufferedImage.TYPE_INT_ARGB);
-//		Graphics2D g2 = bImg.createGraphics();
-//
-//		// background drawing here, the display that doesn't change
-//		drawGrid(g2, imageURLs, coords);
-//
-//		g2.dispose();
-//		return bImg;
-//	}
-
+	public void generateShadingCorner() {
+		
+	}
 }

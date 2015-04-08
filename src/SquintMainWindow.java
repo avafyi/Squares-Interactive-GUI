@@ -54,8 +54,8 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final List<String> SOLIDS = Arrays.asList("wall", "trans");
 	
 	// Window constants
-	public static final int CANVAS_WIDTH = 640;			// the pixel width of the application window
-	public static final int CANVAS_HEIGHT = 640;		// the pixel height of the application window
+	public static final int CANVAS_WIDTH = 800;			// the pixel width of the application window
+	public static final int CANVAS_HEIGHT = 800;		// the pixel height of the application window
 	
 	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
 	private final boolean AI_MODE = false;			// Set this = true to make some dummies (prevents user control)

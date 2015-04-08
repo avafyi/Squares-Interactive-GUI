@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Comparator;
 
 
@@ -29,6 +30,10 @@ public class GlobalHelper {
 	    public int compare(Texture t1, Texture t2) {
 	        return t1.textureName.compareTo(t2.textureName);
 	    }
+	}
+	
+	public static ArrayList<Texture> textureGroupToArrayList(TextureGroup tg) {
+		return new ArrayList<Texture>(tg.textures.values());
 	}
 	
 }
