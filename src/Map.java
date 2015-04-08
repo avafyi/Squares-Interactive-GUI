@@ -38,6 +38,13 @@ public class Map {
 			this.wall = wall;
 		}
 	}
+	public static class WallShadow extends Wall { 
+		public String wallShadow;
+		public WallShadow(String wallShadow) {
+			super(wallShadow);
+			this.wallShadow = super.wall;
+		}
+	}
 	public static class Corner { 
 		public static final String BOT_LEFT = "q1";
 		public static final String BOT_RIGHT = "q2";
@@ -48,6 +55,14 @@ public class Map {
 			this.corner = corner;
 		}
 	}
+	public static class CornerShadow extends Corner{ 
+		public String cornerShadow;
+		public CornerShadow(String cornerShadow) {
+			super(cornerShadow);
+			this.cornerShadow = super.corner;
+		}
+	}
+	
 	public static class CornerSize { 
 		public static final String LARGE = "large";
 		public static final String SMALL = "small";
@@ -273,21 +288,45 @@ public class Map {
 	}
 	
 	private Texture getCornerTexture(TextureGroup tg, String corner, String cornerType) {
-		if (tg == null || corner == null || corner.equals("") || cornerType == null || cornerType.equals("")) {
+		if (tg == null || corner == null || cornerType == null) {
 			return null;
 		}
 		return tg.getTextureExact("corner-" + corner + "-" + cornerType + ".png");
+	}
+	
+	private Texture getCornerShadowTexture(TextureGroup tg, String cornerType) {
+		if (tg == null || cornerType == null) {
+			return null;
+		}
+		return tg.getTextureExact("corner-" + cornerType + ".png");
 	}
 	
 	public void generateObject() {
 		
 	}
 	
-	public void generateShading() {
+	public void generateWallShading(MapArray map, MapLayer mapLayer, WallShadow wallShadowType, String shadowGroup, int row, int col, int end) {
+		// Get the textures
+		TextureGroup tg = textures.get(shadowGroup);
 		
+		// Check if the wall goes across a row or down a column
+		if (wallShadowType.wallShadow == WallShadow.TOP || wallShadowType.wallShadow == WallShadow.BOTTOM) {
+			for (int c = col; c <= end; c++) {
+				// Add the wall texture
+				map.textures[mapLayer.layer][row][c] = tg.getTextureExact(wallShadowType.wallShadow + ".png");
+			}
+		} else {
+			for (int r = row; r <= end; r++) {
+				// Add the wall texture
+				map.textures[mapLayer.layer][r][col] = tg.getTextureExact(wallShadowType.wallShadow + ".png");
+			}
+		}
 	}
 	
-	public void generateShadingCorner() {
-		
+	public void generateCornerShading(MapArray map, MapLayer mapLayer, CornerShadow cornerType, String shadowGroup, int row, int col) {
+		// Get the textures
+		TextureGroup tg = textures.get(shadowGroup);
+		// Add the corner to the map
+		map.textures[mapLayer.layer][row][col] = getCornerShadowTexture(tg, cornerType.cornerShadow);
 	}
 }

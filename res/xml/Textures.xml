@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<root path="C:\Users\Penthesilea\Documents\GitHub\Squares-Interactive-GUI\res\images">
+<root path="C:\Users\piekstra17\Documents\GitHub\Squares-Interactive-GUI\res\images">
     <dir name="avatars">
         <dir name="re">
             <dir name="blond">
@@ -244,13 +244,13 @@
     </dir>
     <dir name="house">
         <dir name="shadows">
-            <file>0.png</file>
-            <file>1.png</file>
-            <file>3.png</file>
             <file>4.png</file>
-            <file>5.png</file>
-            <file>6.png</file>
-            <file>8.png</file>
+            <file>corner-q1.png</file>
+            <file>corner-q4.png</file>
+            <file>edge-q1.png</file>
+            <file>edge-q3.png</file>
+            <file>left.png</file>
+            <file>top.png</file>
         </dir>
         <dir name="walls">
             <file>bottom-1.png</file>

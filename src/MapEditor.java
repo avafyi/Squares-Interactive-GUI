@@ -1,4 +1,3 @@
-import java.awt.Point;
 import java.util.ArrayList;
 
 /**
@@ -42,9 +41,10 @@ public class MapEditor extends Map {
 		addCorner(mt.botLeftcorner.row, mt.botLeftcorner.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), "walls");
 		addCorner(mt.botRightcorner.row, mt.botRightcorner.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), "walls");
 		// Add shadows lines to the room
-		//addShadow()
+		addWallShadow(mt.topWallShadow.row, mt.topWallShadow.col, mt.topWallShadow.end, new WallShadow(WallShadow.TOP), "shadows");
+		addWallShadow(mt.leftWallShadow.row, mt.leftWallShadow.col, mt.leftWallShadow.end, new WallShadow(WallShadow.LEFT), "shadows");
 		// Add shadow corners to the room
-		//addShadowCorner()
+		addCornerShadow(mt.topLeftCornerShadow.row, mt.topLeftCornerShadow.col, new CornerShadow(CornerShadow.TOP_LEFT), "shadows");
 	}
 	
 	public ArrayList<String> getAvailableTextureGroups() {
@@ -67,14 +67,12 @@ public class MapEditor extends Map {
 		generateObject();
 	}
 	
-	public void addShadow() {
-		// TODO needs to be implemented
-		generateShading();
+	public void addWallShadow(int row, int col, int end, WallShadow wallShadowType, String shadowGroup) {
+		generateWallShading(this.map, new MapLayer(MapLayer.SHADOW), wallShadowType, shadowGroup, row, col, end);
 	}
 	
-	public void addShadowCorner() {
-		// TODO needs to be implemented
-		generateShadingCorner();
+	public void addCornerShadow(int row, int col, CornerShadow cornerShadowType, String shadowGroup) {
+		generateCornerShading(this.map, new MapLayer(MapLayer.SHADOW), cornerShadowType, shadowGroup, row, col);
 	}
 	
 	public void setMapSquareTypes(String[] solids) {
@@ -94,7 +92,7 @@ public class MapEditor extends Map {
 		public final Corner botRightcorner;
 		
 		// TODO same modification needed as with corner
-		public final ShadowCorner topLeftShadowCorner;
+		public final ShadowCorner topLeftCornerShadow;
 
 		// TODO same modification needed as with corner
 		public final Wall topWall;
@@ -103,8 +101,8 @@ public class MapEditor extends Map {
 		public final Wall leftWall;
 
 		// TODO same modification needed as with corner
-		public final Shadow topShadow;
-		public final Shadow leftShadow;
+		public final Shadow topWallShadow;
+		public final Shadow leftWallShadow;
 				
 		public class Corner {
 			public final int row;
@@ -127,14 +125,12 @@ public class MapEditor extends Map {
 		}
 		
 		public final class Shadow extends Wall{
-
 			public Shadow(int row, int col, int length) {
 				super(row, col, length);				
 			}			
 		}
 		
 		public final class ShadowCorner extends Corner{
-
 			public ShadowCorner(int row, int col) {
 				super(row, col);
 			}			
@@ -157,11 +153,10 @@ public class MapEditor extends Map {
 			rightWall = new Wall(startRow, endCol+1, endRow-1);
 			leftWall = new Wall(startRow, startCol-1, endRow-1);
 			// Set shadow lines
-			topShadow = new Shadow(startRow, startCol+1, endCol);
-			leftShadow = new Shadow(startRow+1, startCol, endRow);
-			
+			topWallShadow = new Shadow(startRow, startCol+1, endCol);
+			leftWallShadow = new Shadow(startRow+1, startCol, endRow);			
 			// Set shadow corners
-			topLeftShadowCorner = new ShadowCorner(startCol, startRow);
+			topLeftCornerShadow = new ShadowCorner(startCol, startRow);
 		}
 	}
 }
