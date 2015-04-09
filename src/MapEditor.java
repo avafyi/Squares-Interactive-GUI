@@ -16,7 +16,8 @@ public class MapEditor extends Map {
 		// TEMPORARY - these should be called by the maker of the map editor, not by the map editor
 		// BETTER - these should be read in from a file, like an xml with attributes defining the creation
 		// 		of each part of the map
-		makeRoom(3,5,14,16,"wood_floor","walls");
+		makeRoom(3,5,14,16,"wood_floor","walls", "shadows");
+//		makeRoom(3,5,14,16,"wood_floor","walls_dmg", "shadows");
 		
 	} 
 	
@@ -24,29 +25,29 @@ public class MapEditor extends Map {
 	 * MAP EDITING
 	 */
 	
-	public void makeRoom(int sr, int sc, int er, int ec, String floorGroup, String wallGroup) {
+	public void makeRoom(int sr, int sc, int er, int ec, String floorGroup, String wallGroup, String shadowGroup) {
 		
 		// Create our rectangular-room dimension calculator
 		MapTangle mt = new MapTangle(sr, sc, er, ec);
 		// Add the floor
-		addTerrain(mt.startRow, mt.startCol, mt.endRow, mt.endCol, "wood_floor", new Seed(15,4));
+		addTerrain(mt.startRow, mt.startCol, mt.endRow, mt.endCol, floorGroup, new Seed(15,4));
 		// Add the walls around the room
-		addWall(mt.walls.top.row, mt.walls.top.col, mt.walls.top.end, new Wall(Wall.TOP), "walls", new Seed(5, 2));
-		addWall(mt.walls.bottom.row, mt.walls.bottom.col, mt.walls.bottom.end, new Wall(Wall.BOTTOM), "walls", new Seed(5, 2));
-		addWall(mt.walls.right.row, mt.walls.right.col, mt.walls.right.end, new Wall(Wall.RIGHT), "walls", new Seed(5, 2));
-		addWall(mt.walls.left.row, mt.walls.left.col, mt.walls.left.end, new Wall(Wall.LEFT), "walls", new Seed(5, 2));
+		addWall(mt.walls.top.row, mt.walls.top.col, mt.walls.top.end, new Wall(Wall.TOP), wallGroup, new Seed(5, 2));
+		addWall(mt.walls.bottom.row, mt.walls.bottom.col, mt.walls.bottom.end, new Wall(Wall.BOTTOM), wallGroup, new Seed(5, 2));
+		addWall(mt.walls.right.row, mt.walls.right.col, mt.walls.right.end, new Wall(Wall.RIGHT), wallGroup, new Seed(5, 2));
+		addWall(mt.walls.left.row, mt.walls.left.col, mt.walls.left.end, new Wall(Wall.LEFT), wallGroup, new Seed(5, 2));
 		// Add corners to the room
-		addCorner(mt.corners.topRight.row, mt.corners.topRight.col, new Corner(Corner.TOP_RIGHT), new CornerSize(CornerSize.LARGE), "walls");
-		addCorner(mt.corners.topLeft.row, mt.corners.topLeft.col, new Corner(Corner.TOP_LEFT), new CornerSize(CornerSize.LARGE), "walls");
-		addCorner(mt.corners.botLeft.row, mt.corners.botLeft.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), "walls");
-		addCorner(mt.corners.botRight.row, mt.corners.botRight.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), "walls");
+		addCorner(mt.corners.topRight.row, mt.corners.topRight.col, new Corner(Corner.TOP_RIGHT), new CornerSize(CornerSize.LARGE), wallGroup);
+		addCorner(mt.corners.topLeft.row, mt.corners.topLeft.col, new Corner(Corner.TOP_LEFT), new CornerSize(CornerSize.LARGE), wallGroup);
+		addCorner(mt.corners.botLeft.row, mt.corners.botLeft.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), wallGroup);
+		addCorner(mt.corners.botRight.row, mt.corners.botRight.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), wallGroup);
 		// Add shadows lines to the room
-		addWallShadow(mt.wallShadows.top.row, mt.wallShadows.top.col, mt.wallShadows.top.end, new WallShadow(WallShadow.TOP), "shadows");
-		addWallShadow(mt.wallShadows.left.row, mt.wallShadows.left.col, mt.wallShadows.left.end, new WallShadow(WallShadow.LEFT), "shadows");
+		addWallShadow(mt.wallShadows.top.row, mt.wallShadows.top.col, mt.wallShadows.top.end, new WallShadow(WallShadow.TOP), shadowGroup);
+		addWallShadow(mt.wallShadows.left.row, mt.wallShadows.left.col, mt.wallShadows.left.end, new WallShadow(WallShadow.LEFT), shadowGroup);
 		// Add shadow corners to the room
-		addCornerShadow(mt.cornerShadows.topLeft.row, mt.cornerShadows.topLeft.col, new CornerShadow(CornerShadow.TOP_LEFT), "shadows");
+		addCornerShadow(mt.cornerShadows.topLeft.row, mt.cornerShadows.topLeft.col, new CornerShadow(CornerShadow.TOP_LEFT), shadowGroup);
 		// Set which textures are considered to be SOLID map squares
-		setSolids(new String[]{"walls"}, new String[]{"corner-q2-small.png"});
+		setSolids(new String[]{"walls"}, new String[]{"corner-q2-small.png"});		
 	}
 	
 	public ArrayList<String> getAvailableTextureGroups() {

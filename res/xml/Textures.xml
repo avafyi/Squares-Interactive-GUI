@@ -271,26 +271,22 @@
             <file>top-2.png</file>
         </dir>
         <dir name="walls_dmg">
-            <file>0.png</file>
-            <file>1.png</file>
-            <file>10.png</file>
-            <file>11.png</file>
-            <file>12.png</file>
-            <file>13.png</file>
-            <file>14.png</file>
-            <file>15.png</file>
-            <file>16.png</file>
-            <file>17.png</file>
-            <file>18.png</file>
-            <file>19.png</file>
-            <file>2.png</file>
-            <file>3.png</file>
-            <file>4.png</file>
-            <file>5.png</file>
-            <file>6.png</file>
-            <file>7.png</file>
-            <file>8.png</file>
-            <file>9.png</file>
+            <file>bottom-1.png</file>
+            <file>bottom-2.png</file>
+            <file>corner-q1-large.png</file>
+            <file>corner-q1-small.png</file>
+            <file>corner-q2-large.png</file>
+            <file>corner-q2-small.png</file>
+            <file>corner-q3-large.png</file>
+            <file>corner-q3-small.png</file>
+            <file>corner-q4-large.png</file>
+            <file>corner-q4-small.png</file>
+            <file>left-1.png</file>
+            <file>left-2.png</file>
+            <file>right-1.png</file>
+            <file>right-2.png</file>
+            <file>top-1.png</file>
+            <file>top-2.png</file>
         </dir>
         <dir name="wood_floor">
             <file>normal-1.png</file>
@@ -314,23 +310,18 @@
         <dir name="grass">
             <file>0.png</file>
             <file>1.png</file>
-            <file>10.png</file>
             <file>11.png</file>
-            <file>12.png</file>
             <file>13.png</file>
-            <file>14.png</file>
             <file>15.png</file>
-            <file>16.png</file>
             <file>17.png</file>
-            <file>18.png</file>
             <file>2.png</file>
-            <file>3.png</file>
             <file>4.png</file>
             <file>5.png</file>
             <file>6.png</file>
             <file>7.png</file>
             <file>8.png</file>
             <file>9.png</file>
+            <file>normal-1.png</file>
         </dir>
         <dir name="house">
             <file>0.png</file>
@@ -345,28 +336,23 @@
             <file>9.png</file>
         </dir>
         <dir name="pavement">
-            <file>0.png</file>
-            <file>1.png</file>
             <file>10.png</file>
-            <file>11.png</file>
             <file>12.png</file>
-            <file>13.png</file>
             <file>14.png</file>
-            <file>15.png</file>
             <file>16.png</file>
             <file>17.png</file>
             <file>18.png</file>
             <file>19.png</file>
-            <file>2.png</file>
             <file>20.png</file>
             <file>21.png</file>
-            <file>3.png</file>
             <file>4.png</file>
-            <file>5.png</file>
             <file>6.png</file>
-            <file>7.png</file>
             <file>8.png</file>
-            <file>9.png</file>
+            <file>normal-1.png</file>
+            <file>normal-2.png</file>
+            <file>normal-3.png</file>
+            <file>normal-4.png</file>
+            <file>normal-5.png</file>
         </dir>
         <dir name="tree">
             <file>0.png</file>

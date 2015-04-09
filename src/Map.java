@@ -332,6 +332,9 @@ public class Map {
 	}
 	
 	private Texture getTextureUsingSeed(Seed seed, ArrayList<Texture> textures) {
+		if (textures == null || textures.size() == 0) {
+			return null;
+		}
 		double random = Math.random();
 		Random r = new Random();
 		int textureIdx = -1;
@@ -339,7 +342,7 @@ public class Map {
 		ArrayList<Texture> texturesCopy = new ArrayList<Texture>(textures);
 		Collections.sort(texturesCopy, new GlobalHelper.TextureComparator());
 		// Get the number of textures
-		int numTextues = texturesCopy.size();
+		int numTextues = texturesCopy.size();		
 		// get a random texture index
 		// TODO have it look for textures named normal and special and instead of doing a hard cutoff at numTextures/2, use
 		// the counts of each type normal and special as cutoffs and make a list of their indexes or something, choose from those
