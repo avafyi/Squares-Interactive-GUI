@@ -137,7 +137,7 @@ public class Map {
 		loadFiles(".png", new String[] {"avatars"});	
 		// Load the file groups from our file loader into our hashtable of texture groups
 		// exclude groups we do not want
-		map = generateBlankMap(mapLayers, mapCols, mapRows);	
+		map = generateBlankMap(mapLayers, mapRows, mapCols);	
 		addTransparentLayer(map, MapLayer.TRANSPARENT);
 	}
 
@@ -205,8 +205,109 @@ public class Map {
 	}
 	
 	// Sets the type of each square in the map to SOLID or EMPTY
-	public void setMapSquareTypes(String[] solids) {
+	public void setMapSquareTypes(MapArray map, String[] solids, String[] exceptions) {
+		// Used to determine if a map square should be set as solid
+		boolean isSolid = false;
 		// If a square only has a texture on the transparent layer, then it is also a solid
+		for (int row = 0, numRows = map.squares.length; row < numRows; row++) {
+			for (int col = 0, numCols = map.squares[0].length; col < numCols; col++) {
+				// Check to see if there is an exception for this map square, if none then keep performing checks
+				if (!checkIfException(map, row, col, exceptions)) {
+					// Perform checks to see if the map square is SOLID (order matters)
+					if (checkIfOnlyTransparentTexture(map, row, col) ||
+							checkSquareAgainstSolids(map, row, col, solids)) {
+						// Transparent-only square, unreachable
+						isSolid = true;
+					}
+				}
+				
+				// Set the map square type to SOLID or EMPTY (not solid)
+				map.squares[row][col].sqType = isSolid ? MapSquare.SquareType.SOLID : MapSquare.SquareType.EMPTY;
+				// Reset to the default (not solid)
+				isSolid = false;
+			}
+		}
+	}
+	
+	/**
+	 * Determine if the map square only has a transparent image among all image layers
+	 * 
+	 * @param map	The map (contains the map squares)
+	 * @param row	The row of the map square
+	 * @param col	The column of the map square
+	 * @return	Whether or not the map square has just a transparent image (if yes, SOLID)
+	 */
+	private boolean checkIfOnlyTransparentTexture(MapArray map, int row, int col) {
+		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
+			// Ignore the transparent layer
+			if (layer == MapLayer.TRANSPARENT) {
+				continue;
+			}
+			// Check to see if the layer has a texture
+			if (map.textures[layer][row][col] != null) {
+				// If we found a texture, then there isn't only a transparent texture so return false
+				return false;
+			}
+		}
+		// There were no other textures besides the transparent texture
+		return true;
+	}
+	
+	/**
+	 * Determine if a map square contains a SOLID texture at any layer (except transparent)
+	 * 
+	 * @param map		The map (contains the map squares)
+	 * @param row		The row of the map square
+	 * @param col		The column of the map square
+	 * @param solids	The list of directories that contain solid textures
+	 * @return			Whether or not the map square has a SOLID texture (if yes, SOLID)
+	 */
+	private boolean checkSquareAgainstSolids(MapArray map, int row, int col, String[] solids) {
+		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
+			// Ignore the transparent layer
+			if (layer == MapLayer.TRANSPARENT) {
+				continue;
+			}
+			// Check to see if the layer has a texture that is in the list of solids
+			for (String solid : solids) {
+				// Solids are determined by texture group, which is labeled by the enclosing directory's name
+				if (map.textures[layer][row][col] != null && map.textures[layer][row][col].textureDir.equals(solid)) {
+					// Texture is a solid
+					return true;
+				}
+			}
+		}
+		// The texture at the map square is not a solid
+		return false;
+	}
+	
+	/**
+	 * Determine if a map square contains a texture that would normally 
+	 * be considered a SOLID but we want to make an exception
+	 * 
+	 * @param map			The map (contains the map squares)
+	 * @param row			The row of the map square
+	 * @param col			The column of the map square
+	 * @param exceptions	The list of exact texture names that are exceptions (would normally be SOLID)
+	 * @return				Whether or not the map square has a texture exception (if yes, ignore SOLID)
+	 */
+	private boolean checkIfException(MapArray map, int row, int col, String[] exceptions) {
+		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
+			// Ignore the transparent layer
+			if (layer == MapLayer.TRANSPARENT) {
+				continue;
+			}
+			// Check to see if the layer has a texture that is in the list of exceptions
+			for (String exception : exceptions) {
+				// Solids are determined by texture group, which is labeled by the enclosing directory's name
+				if (map.textures[layer][row][col] != null && map.textures[layer][row][col].textureName.equals(exception)) {
+					// Texture is an exception
+					return true;
+				}
+			}
+		}
+		// The texture at the map square is not an exception
+		return false;		
 	}
 	
 		

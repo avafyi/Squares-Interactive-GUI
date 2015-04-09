@@ -47,8 +47,6 @@ public class Player {
 	public ResourceLoader resources = null;
 	
 	public Player(Avatar avatar, MapSquare[][] sq, int direction, boolean canIMove, int playerIdx) {	
-		// Save the avatar
-		this.avatar = avatar;
 		// Pick a pseudorandom location to place the player based on the given map
 		Integer[] numRows = new Integer[sq.length];
 		for (int i = 0; i < numRows.length; i++) {
@@ -75,7 +73,7 @@ public class Player {
 			}
 		}
 		if (!foundSpot) {
-			System.out.println("No room for the player");
+			System.out.println("No room for player number: " + playerIdx);
 			return;
 		}
 
@@ -90,6 +88,8 @@ public class Player {
 		allowedToMove = canIMove;
 		inAnimationPhase = false;
 		isJumping = false;
+		// Set the avatar last, if we couldn't create a player then it will have a null avatar
+		this.avatar = avatar;
 	}
 	
 	public void startMoveTimer() {		

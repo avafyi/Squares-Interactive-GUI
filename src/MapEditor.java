@@ -46,7 +46,7 @@ public class MapEditor extends Map {
 		// Add shadow corners to the room
 		addCornerShadow(mt.cornerShadows.topLeft.row, mt.cornerShadows.topLeft.col, new CornerShadow(CornerShadow.TOP_LEFT), "shadows");
 		// Set which textures are considered to be SOLID map squares
-		setSolids(new String[]{"walls"});
+		setSolids(new String[]{"walls"}, new String[]{"corner-q2-small.png"});
 	}
 	
 	public ArrayList<String> getAvailableTextureGroups() {
@@ -77,8 +77,8 @@ public class MapEditor extends Map {
 		generateCornerShading(this.map, new MapLayer(MapLayer.SHADOW), cornerShadowType, shadowGroup, row, col);
 	}
 	
-	public void setSolids(String[] solids) {
-		setMapSquareTypes(solids);		
+	public void setSolids(String[] solids, String[] exceptions) {
+		setMapSquareTypes(this.map, solids, exceptions);		
 	}
 	
 	public static class MapTangle {
