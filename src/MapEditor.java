@@ -17,7 +17,7 @@ public class MapEditor extends Map {
 		// BETTER - these should be read in from a file, like an xml with attributes defining the creation
 		// 		of each part of the map
 		makeRoom(3,5,14,16,"wood_floor","walls");
-		// srow, scol, erow, ecol
+		
 	} 
 	
 	/**
@@ -29,22 +29,24 @@ public class MapEditor extends Map {
 		// Create our rectangular-room dimension calculator
 		MapTangle mt = new MapTangle(sr, sc, er, ec);
 		// Add the floor
-		addTerrain(mt.startRow, mt.startCol, mt.endRow, mt.endCol, "wood_floor", new Seed(15,6));
+		addTerrain(mt.startRow, mt.startCol, mt.endRow, mt.endCol, "wood_floor", new Seed(15,4));
 		// Add the walls around the room
-		addWall(mt.topWall.row, mt.topWall.col, mt.topWall.end, new Wall(Wall.TOP), "walls", new Seed(5, 2));
-		addWall(mt.botWall.row, mt.botWall.col, mt.botWall.end, new Wall(Wall.BOTTOM), "walls", new Seed(5, 2));
-		addWall(mt.rightWall.row, mt.rightWall.col, mt.rightWall.end, new Wall(Wall.RIGHT), "walls", new Seed(5, 2));
-		addWall(mt.leftWall.row, mt.leftWall.col, mt.leftWall.end, new Wall(Wall.LEFT), "walls", new Seed(5, 2));
+		addWall(mt.walls.top.row, mt.walls.top.col, mt.walls.top.end, new Wall(Wall.TOP), "walls", new Seed(5, 2));
+		addWall(mt.walls.bottom.row, mt.walls.bottom.col, mt.walls.bottom.end, new Wall(Wall.BOTTOM), "walls", new Seed(5, 2));
+		addWall(mt.walls.right.row, mt.walls.right.col, mt.walls.right.end, new Wall(Wall.RIGHT), "walls", new Seed(5, 2));
+		addWall(mt.walls.left.row, mt.walls.left.col, mt.walls.left.end, new Wall(Wall.LEFT), "walls", new Seed(5, 2));
 		// Add corners to the room
-		addCorner(mt.topRightcorner.row, mt.topRightcorner.col, new Corner(Corner.TOP_RIGHT), new CornerSize(CornerSize.LARGE), "walls");
-		addCorner(mt.topLeftcorner.row, mt.topLeftcorner.col, new Corner(Corner.TOP_LEFT), new CornerSize(CornerSize.LARGE), "walls");
-		addCorner(mt.botLeftcorner.row, mt.botLeftcorner.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), "walls");
-		addCorner(mt.botRightcorner.row, mt.botRightcorner.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), "walls");
+		addCorner(mt.corners.topRight.row, mt.corners.topRight.col, new Corner(Corner.TOP_RIGHT), new CornerSize(CornerSize.LARGE), "walls");
+		addCorner(mt.corners.topLeft.row, mt.corners.topLeft.col, new Corner(Corner.TOP_LEFT), new CornerSize(CornerSize.LARGE), "walls");
+		addCorner(mt.corners.botLeft.row, mt.corners.botLeft.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), "walls");
+		addCorner(mt.corners.botRight.row, mt.corners.botRight.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), "walls");
 		// Add shadows lines to the room
-		addWallShadow(mt.topWallShadow.row, mt.topWallShadow.col, mt.topWallShadow.end, new WallShadow(WallShadow.TOP), "shadows");
-		addWallShadow(mt.leftWallShadow.row, mt.leftWallShadow.col, mt.leftWallShadow.end, new WallShadow(WallShadow.LEFT), "shadows");
+		addWallShadow(mt.wallShadows.top.row, mt.wallShadows.top.col, mt.wallShadows.top.end, new WallShadow(WallShadow.TOP), "shadows");
+		addWallShadow(mt.wallShadows.left.row, mt.wallShadows.left.col, mt.wallShadows.left.end, new WallShadow(WallShadow.LEFT), "shadows");
 		// Add shadow corners to the room
-		addCornerShadow(mt.topLeftCornerShadow.row, mt.topLeftCornerShadow.col, new CornerShadow(CornerShadow.TOP_LEFT), "shadows");
+		addCornerShadow(mt.cornerShadows.topLeft.row, mt.cornerShadows.topLeft.col, new CornerShadow(CornerShadow.TOP_LEFT), "shadows");
+		// Set which textures are considered to be SOLID map squares
+		setSolids(new String[]{"walls"});
 	}
 	
 	public ArrayList<String> getAvailableTextureGroups() {
@@ -60,7 +62,7 @@ public class MapEditor extends Map {
 	}
 	
 	public void addCorner(int row, int col, Corner cornerType, CornerSize cornerSize, String cornerGroup) {
-		generateCorner(this.map, new MapLayer(MapLayer.WALL), cornerType, cornerSize, cornerGroup, row, col);
+		generateCorner(this.map, new MapLayer(MapLayer.WALL), cornerType, cornerSize, cornerGroup, row, col);		
 	}
 	
 	public void addObject() {
@@ -75,64 +77,118 @@ public class MapEditor extends Map {
 		generateCornerShading(this.map, new MapLayer(MapLayer.SHADOW), cornerShadowType, shadowGroup, row, col);
 	}
 	
-	public void setMapSquareTypes(String[] solids) {
-		super.setMapSquareTypes(solids);		
+	public void setSolids(String[] solids) {
+		setMapSquareTypes(solids);		
 	}
 	
 	public static class MapTangle {
+		// Dimensions of the rectangle floor
 		public final int startRow;
 		public final int startCol;
 		public final int endRow;
 		public final int endCol;
-		
-		// TODO modify these so we can do mapTangle.corner.topLeft and mapTangle.corner.botRight to access the row and col values
-		public final Corner topLeftcorner;
-		public final Corner topRightcorner;
-		public final Corner botLeftcorner;
-		public final Corner botRightcorner;
-		
-		// TODO same modification needed as with corner
-		public final ShadowCorner topLeftCornerShadow;
-
-		// TODO same modification needed as with corner
-		public final Wall topWall;
-		public final Wall botWall;
-		public final Wall rightWall;
-		public final Wall leftWall;
-
-		// TODO same modification needed as with corner
-		public final Shadow topWallShadow;
-		public final Shadow leftWallShadow;
+		// Stores different wall type dimensions
+		public final Wall walls;		
+		// Stores different wall shadow type dimensions
+		public final WallShadow wallShadows;
+		// Stores different corner type dimensions
+		public final Corner corners;		
+		// Stores different corner shadow type dimensions
+		public final CornerShadow cornerShadows;
 				
-		public class Corner {
-			public final int row;
-			public final int col;
-			public Corner(int row, int col) {
-				this.row = row;
-				this.col = col;
-			}
-		}
-		public class Wall {
+		/**
+		 * Structs
+		 *
+		 */
+		public class WallStruct {
 			public final int row;
 			public final int col;
 			public final int end;
 			
-			public Wall(int row, int col, int length) {
+			public WallStruct(int row, int col, int length) {
 				this.row = row;
 				this.col = col;
 				this.end = length;
 			}
 		}
 		
-		public final class Shadow extends Wall{
-			public Shadow(int row, int col, int length) {
+		public final class ShadowWallStruct extends WallStruct {
+			public ShadowWallStruct(int row, int col, int length) {
 				super(row, col, length);				
 			}			
 		}
 		
-		public final class ShadowCorner extends Corner{
-			public ShadowCorner(int row, int col) {
+		public class CornerStruct {					
+			public final int row;
+			public final int col;
+			public CornerStruct(int row, int col) {
+				this.row = row;
+				this.col = col;
+			}
+		}
+		
+		public final class ShadowCornerStruct extends CornerStruct {
+			public ShadowCornerStruct(int row, int col) {
 				super(row, col);
+			}			
+		}
+		
+		/**
+		 * Map-Feature Group Classes
+		 *
+		 */
+		public class Corner {
+			public final CornerStruct topLeft;
+			public final CornerStruct topRight;
+			public final CornerStruct botLeft;
+			public final CornerStruct botRight;
+			
+			public Corner() {
+				// Set corner dimensions
+				topLeft = new CornerStruct(startRow-3, startCol-1);
+				topRight = new CornerStruct(startRow-3, endCol);
+				botLeft = new CornerStruct(endRow, startCol-1);
+				botRight = new CornerStruct(endRow, endCol);
+			}
+		}
+		public class Wall {	
+			public final WallStruct left;
+			public final WallStruct right;
+			public final WallStruct top;
+			public final WallStruct bottom;
+			
+			public Wall() {
+				// Set wall dimensions			
+				top = new WallStruct(startRow-3, startCol+1, endCol-1);
+				bottom = new WallStruct(endRow+1, startCol+1, endCol-1);
+				right = new WallStruct(startRow, endCol+1, endRow-1);
+				left = new WallStruct(startRow, startCol-1, endRow-1);
+			}
+		}
+		
+		public final class WallShadow {
+			
+			public final ShadowWallStruct left;
+//			public final ShadowWallStruct right;
+			public final ShadowWallStruct top;
+//			public final ShadowWallStruct bottom;
+			
+			public WallShadow() {
+				// Set wall shadow dimensions		
+				top = new ShadowWallStruct(startRow, startCol+1, endCol);
+				left = new ShadowWallStruct(startRow+1, startCol, endRow);		
+			}			
+		}
+		
+		public final class CornerShadow {
+			public final ShadowCornerStruct topLeft;
+//			public final ShadowCornerStruct topRight;
+//			public final ShadowCornerStruct botLeft;
+//			public final ShadowCornerStruct botRight;
+			
+			public CornerShadow() {
+				// Set corner shadow dimensions		
+				topLeft = new ShadowCornerStruct(startRow, startCol);
 			}			
 		}
 		
@@ -141,22 +197,15 @@ public class MapEditor extends Map {
 			this.startRow = startRow;
 			this.startCol = startCol;
 			this.endRow = endRow;
-			this.endCol = endCol;
+			this.endCol = endCol;			
 			// Set corner dimensions
-			topLeftcorner = new Corner(startRow-3, startCol-1);
-			topRightcorner = new Corner(startRow-3, endCol);
-			botLeftcorner = new Corner(endRow, startCol-1);
-			botRightcorner = new Corner(endRow, endCol);
+			corners = new Corner();
 			// Set wall dimensions			
-			topWall = new Wall(startRow-3, startCol+1, endCol-1);
-			botWall = new Wall(endRow+1, startCol+1, endCol-1);
-			rightWall = new Wall(startRow, endCol+1, endRow-1);
-			leftWall = new Wall(startRow, startCol-1, endRow-1);
-			// Set shadow lines
-			topWallShadow = new Shadow(startRow, startCol+1, endCol);
-			leftWallShadow = new Shadow(startRow+1, startCol, endRow);			
-			// Set shadow corners
-			topLeftCornerShadow = new ShadowCorner(startCol, startRow);
+			walls = new Wall();
+			// Set wall shadows		
+			wallShadows = new WallShadow();
+			// Set corner shadows
+			cornerShadows = new CornerShadow();
 		}
 	}
 }

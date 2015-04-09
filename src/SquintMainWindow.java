@@ -58,23 +58,17 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int CANVAS_HEIGHT = 800;		// the pixel height of the application window
 	
 	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
-	private final boolean AI_MODE = false;			// Set this = true to make some dummies (prevents user control)
+	private final boolean AI_MODE = true;			// Set this = true to make some dummies (prevents user control)
 	private Player[] ai_players;					// The list of dummies (it will be resized if there are too many requested players that can fit in the map)
 	private Timer autoMoveTimer;					// Handles the automated movement of the AIs
-	private static final int NUM_AI_PLAYERS = 100;	// The number of dummies you want
-	public static final int AI_MOVE_DELAY = 1000; 	// in milliseconds (used to slow down or speed up the dummies' movements)
+	private static final int NUM_AI_PLAYERS = 399;	// The number of dummies you want
+	public static final int AI_MOVE_DELAY = 100; 	// in milliseconds (used to slow down or speed up the dummies' movements)
 	
 	// PLAYER
 	public Player player = null;
 	public int num_players = 0;
 	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
 	
-	// ANIMATION 
-//	public static final int ANIMATION_DELAY = 250;										// in milliseconds, represents the total theoretical time of the moving animation between two squares
-//	public static final int ANIMATION_DELAY_STEP = ANIMATION_DELAY / Player.NUM_PHASES; // in milliseconds, how much time each phase of the moving animation should take	
-//	private boolean phaseComplete = false;	// whether the animation phase has completed	
-//	Hashtable<Integer, ScheduledFuture<?>> animationHandlers = new Hashtable<Integer, ScheduledFuture<?>>();	// Pair each animation executor with a playerId to make sure that each player gets their own executor	
-
 	// General Level variables
 //	private int currentMap = IN;
 	public static final int MAP_DIM = 40;				// the number of pixels per grid square
