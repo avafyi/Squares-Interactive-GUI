@@ -345,6 +345,11 @@ public class Map {
 		}
 	}
 	
+	public void generatePath(Level map, MapLayer mapLayer, Point[] points, String terrainGroup) {
+		// Get the textures
+		TextureGroup tg = textures.get(terrainGroup);
+	}
+	
 	public void generateAnimatedTerrain(Level map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, int animationDelay, Callable<?> callableAnimator) {
 		// Get the textures
 		TextureGroup tg = textures.get(terrainType);

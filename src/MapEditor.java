@@ -54,7 +54,7 @@ public class MapEditor extends Map {
 	public void makeOutside(int sr, int sc, int er, int ec, String terrainGroup, String animatedTerrainGroup, int terrainAnimationDelay, String houseGroup, String fenceGroup, Callable<?> callableAnimator) {
 		// Add the floor
 		addTerrain(sr, sc, er, ec, terrainGroup, new Seed(1,0));	
-		addAnimatedTerrain(10, 10, 15, 15, "water", terrainAnimationDelay, callableAnimator);
+		addAnimatedTerrain(10, 10, 15, 15, animatedTerrainGroup, terrainAnimationDelay, callableAnimator);
 		// This must be done AFTER adding ALL animated textures
 		setAnimatedSquares();
 		// Set which textures are considered to be SOLID map squares
