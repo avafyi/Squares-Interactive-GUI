@@ -52,6 +52,7 @@ public class AnimatePlayer {
 			
 			// Kill the animation timer by canceling the handler
 			animationHandlers.get(player.idx).cancel(true);
+			animationHandlers.remove(player.idx);
 			
 			// Update the display			
 			try {

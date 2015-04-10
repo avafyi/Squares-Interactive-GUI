@@ -298,6 +298,7 @@
         </dir>
     </dir>
     <dir name="misc">
+        <file>jump_circle.png</file>
         <file>transparent.png</file>
     </dir>
     <dir name="outside_house">
@@ -408,6 +409,16 @@
             <file>7.png</file>
             <file>8.png</file>
             <file>9.png</file>
+        </dir>
+        <dir name="water">
+            <file>ani-water-0.png</file>
+            <file>ani-water-1.png</file>
+            <file>ani-water-2.png</file>
+            <file>ani-water-3.png</file>
+            <file>ani-water-4.png</file>
+            <file>ani-water-5.png</file>
+            <file>ani-water-6.png</file>
+            <file>ani-water-7.png</file>
         </dir>
         <dir name="window">
             <file>0.png</file>

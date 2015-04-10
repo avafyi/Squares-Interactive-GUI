@@ -33,6 +33,9 @@ public class GlobalHelper {
 	}
 	
 	public static ArrayList<Texture> textureGroupToArrayList(TextureGroup tg) {
+		// Return an empty list if not texture group provided
+		if (tg == null) return new ArrayList<Texture>();	
+		// Else return the textures in the texture group in an array list 
 		return new ArrayList<Texture>(tg.textures.values());
 	}
 	

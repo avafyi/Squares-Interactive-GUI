@@ -4,6 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
+import java.util.TimerTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -87,32 +93,45 @@ public class Map {
 	} 
 	// Used to store a ratio of normal to unique (the first half of a texture group is considered the normal half)
 	public final class Seed {
-		public double normPercent;
-		public double specPercent;
+		public final double normPercent;
+		public final double specPercent;
 		public Seed(double normal, double special) {
 			double total = normal+special;
 			normPercent = normal/total;
 			specPercent = special/total;
 		}
 	}	
+	
+	public final class Ratio {
+		public final double item1;
+		public final double item2;
+		public Ratio(double i1, double i2) {
+			double total = i1+i2;
+			item1 = i1/total;
+			item2 = i2/total;
+		}
+	}
 	// Map Textures
 	public HashMap<String, TextureGroup> textures = null;	
 	// Resources
 	public ResourceLoader resources = null;
 	// A map array (just a 3d string)
-	public final class MapArray {
+	public final class Level {
 		public final Texture[][][] textures;	// Holds textures for all layers and squares of the map
 		public final Point[][] coords;			// Holds the pixel coordinates for all map squares
 		public final MapSquare[][] squares;		// Holds the characteristics for all map squares
+		public MapSquare[] animatedSquares;	// A 1D array of all the animated map squares
+		public Animators.TerrainAnimation animator;
 		
-		public MapArray(Texture[][][] map, Point[][] p, MapSquare[][] ms) {
+		public Level(Texture[][][] map, Point[][] p, MapSquare[][] ms) {
 			this.textures = map;
 			this.coords = p;
 			this.squares = ms;
+			this.animator = null;
 		}
 	}
 	// The map
-	public MapArray map = null;
+	public Level map = null;
 	
 	/**
 	 * Maps must be rectangular
@@ -172,20 +191,20 @@ public class Map {
 		System.out.println("Map loaded with " + textureCount + " texture groups.");
 	}
 	
-	private MapArray generateBlankMap(int layers, int rows, int cols) {		
+	private Level generateBlankMap(int layers, int rows, int cols) {		
 		Point[][] coords = new Point[rows][cols];
 		MapSquare[][] squares = new MapSquare[rows][cols];
 		for (int row = 0, rowPoint = 0; row < rows; row++, rowPoint += mapSquareDim) {
 			for (int col = 0, colPoint = 0; col < cols; col++, colPoint += mapSquareDim ) {
 				coords[row][col] = new Point(colPoint, rowPoint);				
-				squares[row][col] = new MapSquare(MapSquare.SquareType.UNDEF, false, -1);
+				squares[row][col] = new MapSquare(MapSquare.SquareType.UNDEF, false, -1, row, col);
 				
 			}
 		}
-		return new MapArray(new Texture[layers][rows][cols], coords, squares);
+		return new Level(new Texture[layers][rows][cols], coords, squares);
 	}
 	
-	private void addTransparentLayer(MapArray map, int layer) {
+	private void addTransparentLayer(Level map, int layer) {
 		Texture transparentTexture = null;
 		for (Texture t : textures.get("misc").textures.values()) {
 			if (t.textureFile.getName().contains("transparent")) {
@@ -205,7 +224,7 @@ public class Map {
 	}
 	
 	// Sets the type of each square in the map to SOLID or EMPTY
-	public void setMapSquareTypes(MapArray map, String[] solids, String[] exceptions) {
+	public void setMapSquareTypes(Level map, String[] solids, String[] exceptions) {
 		// Used to determine if a map square should be set as solid
 		boolean isSolid = false;
 		// If a square only has a texture on the transparent layer, then it is also a solid
@@ -237,7 +256,7 @@ public class Map {
 	 * @param col	The column of the map square
 	 * @return	Whether or not the map square has just a transparent image (if yes, SOLID)
 	 */
-	private boolean checkIfOnlyTransparentTexture(MapArray map, int row, int col) {
+	private boolean checkIfOnlyTransparentTexture(Level map, int row, int col) {
 		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
 			// Ignore the transparent layer
 			if (layer == MapLayer.TRANSPARENT) {
@@ -262,7 +281,7 @@ public class Map {
 	 * @param solids	The list of directories that contain solid textures
 	 * @return			Whether or not the map square has a SOLID texture (if yes, SOLID)
 	 */
-	private boolean checkSquareAgainstSolids(MapArray map, int row, int col, String[] solids) {
+	private boolean checkSquareAgainstSolids(Level map, int row, int col, String[] solids) {
 		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
 			// Ignore the transparent layer
 			if (layer == MapLayer.TRANSPARENT) {
@@ -291,7 +310,7 @@ public class Map {
 	 * @param exceptions	The list of exact texture names that are exceptions (would normally be SOLID)
 	 * @return				Whether or not the map square has a texture exception (if yes, ignore SOLID)
 	 */
-	private boolean checkIfException(MapArray map, int row, int col, String[] exceptions) {
+	private boolean checkIfException(Level map, int row, int col, String[] exceptions) {
 		for (int layer = 0, numLayers = map.textures.length; layer < numLayers; layer++) {
 			// Ignore the transparent layer
 			if (layer == MapLayer.TRANSPARENT) {
@@ -316,14 +335,28 @@ public class Map {
 	// 4 1 5 5
 	// if randSeed == 0 			all normal
 	// if randSeed >= 1 && <= 10 	normal with unique
-	public void addLevelTerrain(MapArray map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, Seed terrainSeed) {
+	public void generateTerrain(Level map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, Seed terrainSeed) {
 		// Get the textures
 		TextureGroup tg = textures.get(terrainType);
 		for (int row = startRow; row <= endRow; row++) {
 			for (int col = startCol; col <= endCol; col++) {
-				map.textures[mapLayer.layer][row][col] = getTextureUsingSeed(terrainSeed, GlobalHelper.textureGroupToArrayList(tg));
+				map.textures[mapLayer.layer][row][col] = getTextureUsingSeed(terrainSeed, tg);
 			}
 		}
+	}
+	
+	public void generateAnimatedTerrain(Level map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, int animationDelay, Callable<?> callableAnimator) {
+		// Get the textures
+		TextureGroup tg = textures.get(terrainType);
+		for (int row = startRow; row <= endRow; row++) {
+			for (int col = startCol; col <= endCol; col++) {
+				map.textures[mapLayer.layer][row][col] = GlobalHelper.textureGroupToArrayList(tg).get(0);
+				map.squares[row][col].isAnimated = true;
+			}
+		}		
+		map.animator = new Animators.TerrainAnimation(tg, callableAnimator);
+		ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+		scheduledExecutor.scheduleAtFixedRate(map.animator, 0, animationDelay, TimeUnit.MILLISECONDS);
 	}
 	
 	private Texture getRandomNamedTexture(TextureGroup tg, String genericName) {
@@ -331,27 +364,47 @@ public class Map {
 		return (textures.get(new Random().nextInt(textures.size())));
 	}
 	
-	private Texture getTextureUsingSeed(Seed seed, ArrayList<Texture> textures) {
-		if (textures == null || textures.size() == 0) {
-			return null;
+	private Texture getRandomNamedTexture(ArrayList<Texture> textures, String genericName) {
+		return (textures.get(new Random().nextInt(textures.size())));
+	}
+	
+	private Texture getTextureUsingSeed(Seed seed, TextureGroup tg) {
+		if (seed == null) {
+			return getRandomNamedTexture(tg, ".png");
 		}
 		double random = Math.random();
 		Random r = new Random();
-		int textureIdx = -1;
+		// Grab just the textures and sort them
+		ArrayList<Texture> texturesCopy = new ArrayList<Texture>(tg.textures.values());
+		Collections.sort(texturesCopy, new GlobalHelper.TextureComparator());
+		// get and return a texture based on the seed
+		if (random <= seed.normPercent) {
+			ArrayList<Texture> normalTextures = tg.getTexturesLike("normal");
+			return normalTextures.get(r.nextInt(normalTextures.size()));
+		} else {
+			ArrayList<Texture> specialTextures = tg.getTexturesLike("special");
+			return specialTextures.get(r.nextInt(specialTextures.size()));
+		}
+	}
+	
+	private Texture getTextureUsingRatio(Ratio ratio, ArrayList<Texture> textures) {
+		if (textures == null || textures.size() == 0) {
+			return null;
+		}
+		if (ratio == null) {
+			return getRandomNamedTexture(textures, ".png");
+		}
+		double random = Math.random();
+		Random r = new Random();
 		// Grab just the textures and sort them
 		ArrayList<Texture> texturesCopy = new ArrayList<Texture>(textures);
 		Collections.sort(texturesCopy, new GlobalHelper.TextureComparator());
-		// Get the number of textures
-		int numTextues = texturesCopy.size();		
-		// get a random texture index
-		// TODO have it look for textures named normal and special and instead of doing a hard cutoff at numTextures/2, use
-		// the counts of each type normal and special as cutoffs and make a list of their indexes or something, choose from those
-		if (random <= seed.normPercent) {
-			textureIdx = (int)(r.nextInt(numTextues/2));
+		// get and return a texture based on the ratio
+		if (random <= ratio.item1) {
+			return texturesCopy.get(r.nextInt((int)(texturesCopy.size()/2)));
 		} else {
-			textureIdx = (int)(r.nextInt(numTextues - numTextues/2) + numTextues/2);
+			return texturesCopy.get(r.nextInt((int)(texturesCopy.size()/2)) + (int)(texturesCopy.size()/2));
 		}
-		return texturesCopy.get(textureIdx); 
 	}
 	
 	public MapSquare getMapSquare(Point p) {
@@ -364,7 +417,7 @@ public class Map {
 	/**
 	 * 
 	 */
-	public void generateWall(MapArray map, MapLayer mapLayer, Wall wallType, String wallGroup, Seed wallSeed, int row, int col, int end) {
+	public void generateWall(Level map, MapLayer mapLayer, Wall wallType, String wallGroup, Ratio wallRatio, int row, int col, int end) {
 		// Get the textures
 		TextureGroup tg = textures.get(wallGroup);
 		// Get textures of the same type
@@ -374,17 +427,17 @@ public class Map {
 		if (wallType.wall == Wall.TOP || wallType.wall == Wall.BOTTOM) {
 			for (int c = col; c <= end; c++) {
 				// Add the wall texture
-				map.textures[mapLayer.layer][row][c] = getTextureUsingSeed(wallSeed, similarTextures);
+				map.textures[mapLayer.layer][row][c] = getTextureUsingRatio(wallRatio, similarTextures);
 			}
 		} else {
 			for (int r = row; r <= end; r++) {
 				// Add the wall texture
-				map.textures[mapLayer.layer][r][col] = getTextureUsingSeed(wallSeed, similarTextures);
+				map.textures[mapLayer.layer][r][col] = getTextureUsingRatio(wallRatio, similarTextures);
 			}
 		}
 	}
 	
-	public void generateCorner(MapArray map, MapLayer mapLayer, Corner cornerType, CornerSize cornerSize, String cornerGroup, int row, int col) {
+	public void generateCorner(Level map, MapLayer mapLayer, Corner cornerType, CornerSize cornerSize, String cornerGroup, int row, int col) {
 		// Get the textures
 		TextureGroup tg = textures.get(cornerGroup);
 		// Add the corner to the map
@@ -409,7 +462,7 @@ public class Map {
 		
 	}
 	
-	public void generateWallShading(MapArray map, MapLayer mapLayer, WallShadow wallShadowType, String shadowGroup, int row, int col, int end) {
+	public void generateWallShading(Level map, MapLayer mapLayer, WallShadow wallShadowType, String shadowGroup, int row, int col, int end) {
 		// Get the textures
 		TextureGroup tg = textures.get(shadowGroup);
 		
@@ -427,7 +480,7 @@ public class Map {
 		}
 	}
 	
-	public void generateCornerShading(MapArray map, MapLayer mapLayer, CornerShadow cornerType, String shadowGroup, int row, int col) {
+	public void generateCornerShading(Level map, MapLayer mapLayer, CornerShadow cornerType, String shadowGroup, int row, int col) {
 		// Get the textures
 		TextureGroup tg = textures.get(shadowGroup);
 		// Add the corner to the map

@@ -13,9 +13,9 @@ import java.util.concurrent.TimeUnit;
 
 public class MovePlayer extends AnimatePlayer {
 	
-	public static ScheduledFuture<?> movePlayer(int direction, Player player, Callable<?> updateDisplayCallable) {
+	public static void movePlayer(int direction, Player player, Callable<?> updateDisplayCallable) {
 		if (player == null || !player.allowedToMove) {
-			return null;		// Make sure we have a player to move and that they are allowed to move
+			return;		// Make sure we have a player to move and that they are allowed to move
 		}
 		boolean animate = false;
 		// If the player is not current facing the direction specified via
@@ -35,6 +35,5 @@ public class MovePlayer extends AnimatePlayer {
 		} else {
 			player.allowedToMove = true;
 		}
-		return animationHandlers.get(player.idx);
 	}
 }

@@ -42,7 +42,7 @@ public class Player {
 	
 	// Holds the textures for the player 
 	public Avatar avatar = null;
-	
+		
 	// Resources
 	public ResourceLoader resources = null;
 	
