@@ -232,7 +232,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	
 	private void drawAnimatedTerrain(Graphics g) {
 		for (MapSquare animatedSquare : animatedSquares) {
-			drawImageToGrid(level.map.animator.getCurrentPhaseTexture().textureFile, animatedSquare.row * MAP_DIM, animatedSquare.col * MAP_DIM, g, false, false);
+			drawImageToGrid(level.map.animator.getCurrentPhaseTexture().textureFile, animatedSquare.col * MAP_DIM, animatedSquare.row * MAP_DIM, g, false, false);
 		}		
 	}
 	

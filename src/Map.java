@@ -340,14 +340,30 @@ public class Map {
 		TextureGroup tg = textures.get(terrainType);
 		for (int row = startRow; row <= endRow; row++) {
 			for (int col = startCol; col <= endCol; col++) {
-				map.textures[mapLayer.layer][row][col] = getTextureUsingSeed(terrainSeed, tg);
+				map.textures[mapLayer.layer][row][col] = getTextureUsingSeed(terrainSeed, tg, "");
 			}
 		}
 	}
 	
-	public void generatePath(Level map, MapLayer mapLayer, Point[] points, String terrainGroup) {
+	public void generatePathway(Level map, MapLayer mapLayer, Point[] points, int pathWidth, String terrainGroup, Seed middleTerrainSeed) {
+		// The idea here is that they can have for example, 3 points. one in the top right, one in the bottom right, and one in the bottom left
+		// this will then draw a pathway from point 1 to point 2, and point 2 will have a curved area as it transitions to the path to point 3		
 		// Get the textures
 		TextureGroup tg = textures.get(terrainGroup);
+		// Get a set of path squares which have a name and coordinate relative to the provided points
+		PathTangle paTa = new PathTangle(points, pathWidth);
+		// Go through the squares and add them to the map
+		for(PathTangle.PathSquare square : paTa.getSquares()) {
+			ArrayList<Texture> possibleTextures = tg.getTexturesStartingWith(square.name);
+			if (possibleTextures.isEmpty()) continue;
+			// If it is a middle square however, variations are acceptable as they won't mess up the path structure
+			if (square.name.equals("middle")) { 
+				map.textures[mapLayer.layer][square.coord.y][square.coord.x] = getTextureUsingSeed(middleTerrainSeed, tg, "middle-");			
+			} else {
+				map.textures[mapLayer.layer][square.coord.y][square.coord.x] = possibleTextures.get(0);
+			}
+		}
+		
 	}
 	
 	public void generateAnimatedTerrain(Level map, MapLayer mapLayer, int startRow, int startCol, int endRow, int endCol, String terrainType, int animationDelay, Callable<?> callableAnimator) {
@@ -373,21 +389,25 @@ public class Map {
 		return (textures.get(new Random().nextInt(textures.size())));
 	}
 	
-	private Texture getTextureUsingSeed(Seed seed, TextureGroup tg) {
+	private Texture getTextureUsingSeed(Seed seed, TextureGroup textures, String prefix) {
 		if (seed == null) {
-			return getRandomNamedTexture(tg, ".png");
+			return getRandomNamedTexture(textures, ".png");
 		}
 		double random = Math.random();
-		Random r = new Random();
 		// Grab just the textures and sort them
-		ArrayList<Texture> texturesCopy = new ArrayList<Texture>(tg.textures.values());
-		Collections.sort(texturesCopy, new GlobalHelper.TextureComparator());
+		Random r = new Random();
+		ArrayList<Texture> allTextures = new ArrayList<Texture>(textures.textures.values());
+		Collections.sort(allTextures, new GlobalHelper.TextureComparator());
 		// get and return a texture based on the seed
 		if (random <= seed.normPercent) {
-			ArrayList<Texture> normalTextures = tg.getTexturesLike("normal");
+			ArrayList<Texture> normalTextures = textures.getTexturesStartingWith(prefix + "normal");
+			// If no normal textures were found, simply return a random texture from the original list
+			if (normalTextures.isEmpty()) return allTextures.get(r.nextInt(allTextures.size()));
 			return normalTextures.get(r.nextInt(normalTextures.size()));
 		} else {
-			ArrayList<Texture> specialTextures = tg.getTexturesLike("special");
+			ArrayList<Texture> specialTextures = textures.getTexturesStartingWith(prefix + "special");
+			// If no special textures were found, simply return a random texture from the original list
+			if (specialTextures.isEmpty()) return allTextures.get(r.nextInt(allTextures.size()));
 			return specialTextures.get(r.nextInt(specialTextures.size()));
 		}
 	}

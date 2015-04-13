@@ -1,5 +1,6 @@
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 /**
@@ -40,7 +41,26 @@ public class TextureGroup {
 				likeTextures.add(textures.get(name));
 			}
 		}
+		// Sort the textures before returning them in case the caller wants the closest match
+		Collections.sort(likeTextures, new GlobalHelper.TextureComparator());
 		// Return the like textures list, empty if none found
 		return likeTextures;
+	}
+	
+	public ArrayList<Texture> getTexturesStartingWith(String genericName) {
+		// Holds the similarly named textures
+		ArrayList<Texture> likePrefixTextures = new ArrayList<Texture>();
+		// Go through all textures in the group
+		for (String name : textures.keySet()) {
+			// Check if the texture's name is similar to the generic name
+			if (name.startsWith(genericName)) {
+				// Add the like texture to the list of like textures
+				likePrefixTextures.add(textures.get(name));
+			}
+		}
+		// Sort the textures before returning them in case the caller wants the closest match
+		Collections.sort(likePrefixTextures, new GlobalHelper.TextureComparator());
+		// Return the like textures list, empty if none found
+		return likePrefixTextures;
 	}
 }

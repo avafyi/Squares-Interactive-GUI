@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
@@ -54,7 +55,11 @@ public class MapEditor extends Map {
 	public void makeOutside(int sr, int sc, int er, int ec, String terrainGroup, String animatedTerrainGroup, int terrainAnimationDelay, String houseGroup, String fenceGroup, Callable<?> callableAnimator) {
 		// Add the floor
 		addTerrain(sr, sc, er, ec, terrainGroup, new Seed(1,0));	
-		addAnimatedTerrain(10, 10, 15, 15, animatedTerrainGroup, terrainAnimationDelay, callableAnimator);
+		addAnimatedTerrain(12, 1, 18, 7, animatedTerrainGroup, terrainAnimationDelay, callableAnimator);
+		addPathway(new Point[]{new Point(18, 0), new Point(18, 10)}, 2, "grass", new Seed(10,0));
+		
+		
+		
 		// This must be done AFTER adding ALL animated textures
 		setAnimatedSquares();
 		// Set which textures are considered to be SOLID map squares
@@ -76,6 +81,10 @@ public class MapEditor extends Map {
 	
 	public ArrayList<String> getAvailableTextureGroups() {
 		return new ArrayList<String>(super.textures.keySet());	
+	}
+	
+	public void addPathway(Point[] points, int pathWidth, String terrainType, Seed middleTerrainSeed) {
+		generatePathway(this.map, new MapLayer(MapLayer.TERRAIN), points, pathWidth, terrainType, middleTerrainSeed);
 	}
 	
 	public void addTerrain(int startRow, int startCol, int endRow, int endCol, String terrainType, Seed seed) {
