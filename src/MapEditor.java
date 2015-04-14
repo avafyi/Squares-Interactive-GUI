@@ -58,6 +58,8 @@ public class MapEditor extends Map {
 		addAnimatedTerrain(12, 1, 18, 7, animatedTerrainGroup, terrainAnimationDelay, callableAnimator);
 		addPathway(new Point[]{new Point(18, 0), new Point(18, 10)}, 2, "grass", new Seed(10,0));
 		
+		addObject(1,1,"house_1");
+		
 		
 		
 		// This must be done AFTER adding ALL animated textures
@@ -103,8 +105,8 @@ public class MapEditor extends Map {
 		generateCorner(this.map, new MapLayer(MapLayer.WALL), cornerType, cornerSize, cornerGroup, row, col);		
 	}
 	
-	public void addObject() {
-		generateObject();
+	public void addObject(int topLeftRow, int topLeftCol, String objectType) {
+		generateObject(this.map, new MapLayer(MapLayer.OBJECT), topLeftRow, topLeftCol, objectType);
 	}
 	
 	public void addWallShadow(int row, int col, int end, WallShadow wallShadowType, String shadowGroup) {

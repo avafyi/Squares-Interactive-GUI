@@ -483,8 +483,39 @@ public class Map {
 		return tg.getTextureExact("corner-" + cornerType + ".png");
 	}
 	
-	public void generateObject() {
-		
+	/**
+	 * The idea behind generateObject is that it will be given a directory "objectGroup"
+	 * and inside that directory will be a collection of image files with the prefix 
+	 * "component-". 
+	 * 
+	 * These will be drawn starting at the top left, (row,col) and will be
+	 * drawn a row at a time.
+	 * 
+	 * It will draw them sequentially, so component-1-1 will be drawn, and 
+	 * then component-1-2 and so on.
+	 * 
+	 * It will determine how many map squares are being used by the image, so if it is 80
+	 * pixels wide and the height is 160 and the square size is 40x40, it will know to draw
+	 * the next image at the third square over, as the first two are occupied. When it comes 
+	 * time to go down a row, it will use the height 160 to calculate that it needs to go down
+	 * to row 5, as the first 4 rows are occupied.
+	 * 
+	 * This expects that the images are named as such:
+	 * "component-#-#.png" where the first '#' is the logical row and the 
+	 * second '#' is the column column. Logical meaning relative to the other
+	 * components that make up the object
+	 * 
+	 * @param map
+	 * @param mapLayer
+	 * @param row
+	 * @param col
+	 * @param objectGroup
+	 */
+	public void generateObject(Level map, MapLayer mapLayer, int row, int col, String objectGroup) {
+		// Get the textures
+		TextureGroup tg = textures.get(objectGroup);		
+		ArrayList<Texture> components = tg.getTexturesStartingWith("component");
+		ObjectTangle objTa = new ObjectTangle(components, mapSquareDim, row, col);
 	}
 	
 	public void generateWallShading(Level map, MapLayer mapLayer, WallShadow wallShadowType, String shadowGroup, int row, int col, int end) {
