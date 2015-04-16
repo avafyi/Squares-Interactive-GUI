@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.Comparator;
 
-
 /**
  * 
  * 
@@ -11,7 +10,12 @@ import java.util.Comparator;
 
 public class GlobalHelper {
 	
-	// http://stackoverflow.com/questions/4050087/how-to-obtain-the-last-path-segment-of-an-uri
+	/**
+	 * source: http://stackoverflow.com/questions/4050087/how-to-obtain-the-last-path-segment-of-an-uri
+	 * 
+	 * @param url
+	 * @return
+	 */
 	public static String getLastBitFromUrl(final String url){
 	    return url.replaceFirst(".*\\\\([^\\\\?]+).*", "$1");
 	}

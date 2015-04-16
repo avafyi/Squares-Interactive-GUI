@@ -1,6 +1,14 @@
 import java.awt.Point;
 import java.util.ArrayList;
 
+/**
+ * PARTIAL IMPLEMENTATION
+ * 	Needs to support diagonal paths
+ * 	Needs to support a sequence of points (curves)
+ * 
+ * @author Caleb Piekstra
+ *
+ */
 
 public class PathTangle {
 	

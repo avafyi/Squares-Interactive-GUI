@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.Collections;
 
-
 /**
 
  * This abstract class implements the Runnable interface and can be used to notify listeners
@@ -19,8 +18,6 @@ import java.util.Collections;
  * @source http://www.algosome.com/articles/knowing-when-threads-stop.html
 
  */
-
-
 
 public abstract class NotificationThread implements Runnable{
 

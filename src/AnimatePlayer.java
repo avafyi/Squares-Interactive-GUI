@@ -11,7 +11,14 @@ import java.util.concurrent.ScheduledFuture;
 
 public class AnimatePlayer {
 	
-	// ANIMATION 
+	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	Animation
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
 	
 	// in milliseconds, represents the total theoretical time of the moving animation between two squares
 	public static final int ANIMATION_DELAY = 250;										

@@ -9,6 +9,11 @@ import java.util.concurrent.Callable;
  */
 public class Animators {
 
+	/**
+	 * Used to keep track of what player to move, 
+	 * when to move, and when to trigger a GUI update
+	 *
+	 */
 	public static class MoveAnimation extends TimerTask {
 		private Player player = null;
 		private int speedToggle;
@@ -27,7 +32,13 @@ public class Animators {
 			}
 		}
 	}
-	
+
+	/**
+	 * Used to loop through an animation sequence and
+	 * notify the GUI of when to update to the next
+	 * phase (texture) of the animation
+	 *
+	 */
 	public static class TerrainAnimation extends TimerTask {
 		private final int numPhases;		// The number of phases in the animation
 		private int currentPhase;			// The current phase of the animation

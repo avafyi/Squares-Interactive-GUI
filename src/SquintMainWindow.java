@@ -16,7 +16,6 @@ import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -40,71 +39,56 @@ import javax.swing.SwingUtilities;
  */
 public class SquintMainWindow extends JPanel implements KeyListener {
 
-	// Serial ID
+	// Cereal Identification (not frosted flakes)
 	private static final long serialVersionUID = -8781116976800446850L;
 
 	// Window title
-	public static final String TITLE = "...Squares Interactive GUI...";
-
-	// File directory constants (used in map generation)
-	public static final String AVATAR_SUBDIR = "avatars/re/";	// The file path to the avatars used in this program
-	public static final String IMAGES_DIR = "res/images/";		// The file path of images used in this program
-	
-	// A list of substrings that indicate certain map "objects" that are solid and therefore should block avatars from entering their pixel space
-	public static final List<String> SOLIDS = Arrays.asList("wall", "trans");
-	
-	// Window constants
+	public static final String TITLE = "Squares Interactive - SQUINT";
+			
+	// Size of the desktop client window
 	public static final int CANVAS_WIDTH = 800;		// the pixel width of the application window
-	public static final int CANVAS_HEIGHT = 800;		// the pixel height of the application window
+	public static final int CANVAS_HEIGHT = 800;	// the pixel height of the application window
 	
-	// AI - Disabled by default, set AI_MODE = true; if you want to run in AI mode (note that keyboard input is ignored during AI mode)
-	private final boolean AI_MODE = false;			// Set this = true to make some dummies (prevents user control)
-	private Player[] ai_players;					// The list of dummies (it will be resized if there are too many requested players that can fit in the map)
-	private Timer autoMoveTimer;					// Handles the automated movement of the AIs
-	private static final int NUM_AI_PLAYERS = 1972;	// The number of dummies you want
-	public static final int AI_MOVE_DELAY = 100; 	// in milliseconds (used to slow down or speed up the dummies' movements)
-	public static final int TERRAIN_ANIMATION_DELAY = 200;
+	// Constants that define the level's characteristics
+	public static final int MAP_LAYERS = 4;	// The number of texture layers in the map
+	public static final int MAP_LEVEL = 0;	// Currently unimplemented
 	
-	// PLAYER
+	// Toggle between AI mode and client mode
+	private final boolean AI_MODE = false;					
+	// The list of ai players for triggering movements
+	private Player[] ai_players;					
+	// The number of AI requested
+	private static final int NUM_AI_PLAYERS = 1972;	
+	// The delay in ms between the AI movements
+	public static final int AI_MOVE_DELAY = 100; 		
+	// The delay in ms between terrain updates
+	public static final int TERRAIN_ANIMATION_DELAY = 200;	
+	
+	// The player
 	public Player player = null;
-	public int num_players = 0;
-	public List<Integer> heldKeys = new ArrayList<Integer>();	// Used to make sure that other keypresses do not interrupt an action that should be repeated by holding a key down
+	// The number of clients connected to the host
+	public int num_players = 0;		
+	// Used to keep track of keys that have not been released
+	public List<Integer> heldKeys = new ArrayList<Integer>();	
 	
-	// General Level variables
-//	private int currentMap = IN;
-	public static final int MAP_DIM = 40;				// the number of pixels per grid square
-//	public static final int NUM_SQUARES_ACROSS = CANVAS_WIDTH / MAP_DIM;	// The logical width of the map
-//	public static final int NUM_SQUARES_DOWN = CANVAS_HEIGHT / MAP_DIM;		// The logical height of the map
-	private static enum Level { interior, exterior };
+	// the number of pixels per grid square
+	public static final int MAP_DIM = 40;				
 	
-	// Inside Level
-//	private String[][][] roomSquaresImageURLs = null;
-//	private Point[][] roomSquaresCoords = null;
+	// The "background" image for the level - used so we only redraw moving parts
 	private BufferedImage roomBackgroundImage = null;
+	
+	// The entire level
+	Map level = null;
+	
+	// These are pointers to data in the 'level' variable
 	private MapSquare[][] mapSquares = null;
 	private MapSquare[] animatedSquares = null;
 	
-//	private ThreadListener moveListener = null;
-//	private Thread moveThread = null;
-	
-//	public static final int IN = 0;	// Level ID number
-	
-	// Outside Level
-//	private String[][][] outsideSquaresImageURLs = null;
-//	private Point[][] outsideSquaresCoords = null;
-//	private BufferedImage outsideBackgroundImage = null;
-//	private MapSquare[][] outsideSquares = null;
-//	public static final int OUT_SQUARES_ACROSS = 20;	// The logical width of the map
-//	public static final int OUT_SQUARES_DOWN = 15;		// The logical height of the map
-//	public static final int OUT = 1;	// Level number
-	
-	//
-	Map level = null;
-	public static final int MAP_LAYERS = 4;
-	AvatarGroup avatars = null;
-	public static final int MAP_LEVEL = 0;
 	// Resource loader
 	private ResourceLoader resLoad = null;
+	
+	// Texture Groups for the avatars
+	AvatarGroup avatars = null;
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
@@ -126,25 +110,27 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		// Create an avatar group for the players
 		avatars = new AvatarGroup(resLoad, "re");
 		
-		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));
-		
+		// Set up the client window
+		setPreferredSize(new Dimension(CANVAS_WIDTH, CANVAS_HEIGHT));		
 		addKeyListener(this);
         setFocusable(true);
         setFocusTraversalKeysEnabled(false);
 
-		if (AI_MODE) 
-		{
+        // Determine what mode to start the client in
+		if (AI_MODE) {
+			// Set up the AI and lock out user input
 			initAI();
 		} else {
-			// Create a new player and update the map to show it
-//			player = new Player(avatars.getRandomAvatar(), mapSquares, Player.DOWN, true, ++num_players);
+			// Create a new player and update the map with it's location
 			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.Move.DOWN, true, ++num_players);			
 			changeMapOccupation(player.x, player.y, player.idx, true);			
 		}		
 	}
 	
 	private void editLevel(MapEditor level) {
+		// This is the prototype ROOM level
 //		level.makeRoom(3,5,14,16,"wood_floor","walls", "shadows");
+		// This is the prototype OUTSIDE level
 		level.makeOutside(0,0,19,19, "grass","water",TERRAIN_ANIMATION_DELAY, "", "", new TerrainAnimator());
 	}
 	
@@ -171,7 +157,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			changeMapOccupation(currAI.x, currAI.y, currAI.idx, true);					
 		}
 		// Configure a timer to automatically move the AI players
-		autoMoveTimer = new Timer();
+		Timer autoMoveTimer = new Timer();
 		autoMoveTimer.scheduleAtFixedRate(new TimerTask() {
 			@Override
 			public void run() {
@@ -186,6 +172,14 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}, 2000, AI_MOVE_DELAY);
 	}
 	
+	/**
+	 * This creates a static "background" image so we don't have to redraw the
+	 * entire map every time a GUI update is triggered
+	 * 
+	 * @param textures
+	 * @param coords
+	 * @return
+	 */
 	public BufferedImage makeImage(Texture[][][] textures, Point[][] coords) {
 		BufferedImage bImg = new BufferedImage(CANVAS_WIDTH, CANVAS_HEIGHT, 
 				BufferedImage.TYPE_INT_ARGB);
@@ -198,12 +192,15 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		return bImg;
 	}
 
-	/** Custom painting codes on this JPanel */
+	
 	@Override
 	public void paintComponent(Graphics g) {
-		super.paintComponent(g);  // paint background
-		drawMap(g, Level.interior);
+		super.paintComponent(g);  
+		// paint background
+		drawMap(g);
+		// Update the animated textures
 		drawAnimatedTerrain(g);
+		// Update the avatar textures
 		drawAvatars((Graphics2D) g, AI_MODE);
 	}
 	
@@ -213,20 +210,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * @param g		the graphics object
 	 * @param level	the map to be drawn
 	 */
-	private void drawMap(Graphics g, Level level) {
-		switch (level) {
-			case interior:
-				// Ensure that a static background image has been generated for the map
-				if (roomBackgroundImage != null) {
-					g.drawImage(roomBackgroundImage, 0, 0, this);
-				}
-				break;
-			case exterior:
-				// Not yet implemented
-				break;
-			default:
-				// Not a valid map
-				break;				
+	private void drawMap(Graphics g) {
+		// Ensure that a static background image has been generated for the map
+		if (roomBackgroundImage != null) {
+			g.drawImage(roomBackgroundImage, 0, 0, this);
 		}
 	}
 	
@@ -255,7 +242,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 
 	/**
-	 * Draws the gridlines to define tiles in the roomSquaresImageURLs
+	 * Draws the map like a grid
 	 * 
 	 * @param numTilesPerRowAndCol		the number of tiles per row and per column
 	 * @param g							the graphics object
@@ -316,8 +303,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			img = Toolkit.getDefaultToolkit().createImage(producer);  
 		}
 		if (scaleImage) {
-//			int newWidthFactor = (int) Math.ceil(bimg.getWidth() / MAP_DIM);
-//			int newHeightFactor = (int) Math.ceil(bimg.getHeight() / MAP_DIM);
 			Dimension scaledSize = ImageEditor.getScaledDimension(new Dimension(bimg.getWidth(), bimg.getHeight()), new Dimension(MAP_DIM, MAP_DIM), true);
 			img = resizeToBig(img, scaledSize.width, scaledSize.height);
 		}
@@ -325,6 +310,14 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		g2d.drawImage(img, x_coord, y_coord, null);
 	}	
 	
+	/**
+	 * Make a larger copy of the original image
+	 * 
+	 * @param originalImage
+	 * @param biggerWidth
+	 * @param biggerHeight
+	 * @return
+	 */
 	private Image resizeToBig(Image originalImage, int biggerWidth, int biggerHeight) {
 	    int type = BufferedImage.TYPE_INT_ARGB;
 
@@ -344,6 +337,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	    return resizedImage;
 	}
 
+	/**
+	 * Draw the player onto the map
+	 * 
+	 * @param player
+	 * @param g
+	 */
 	private void drawPlayer(Player player, Graphics g) {	
 		if (player == null) {
 			return;
@@ -394,7 +393,11 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}
 	}
 
-	/** The entry main() method */
+	/**
+	 * Set up the client window
+	 * 
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		// Run GUI codes in the Event-Dispatching thread for thread safety
 		SwingUtilities.invokeLater(new Runnable() {
@@ -409,38 +412,13 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			}
 		});
 	}
-
-	@Override
-	public void keyPressed(KeyEvent e) {
-		if (AI_MODE) return;
-		if (!heldKeys.contains(e.getKeyCode())) {
-			heldKeys.add(new Integer(e.getKeyCode()));		
-		}
-		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
-    		player.speed = Player.RUNNING;			
-		}
-    	if (player.allowedToMove) {
-	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
-	        	movePlayer(Player.Move.RIGHT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
-	        	movePlayer(Player.Move.UP, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
-	        	movePlayer(Player.Move.LEFT, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
-	        	movePlayer(Player.Move.DOWN, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_SPACE)) {
-	        	player.isJumping = true;
-	        	movePlayer(player.direction, player);
-	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
-	        	int modVal = Player.Move.RIGHT + 1;
-	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
-	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
-	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
-	        }
-	        repaint();
-		}
-	}
 	
+	/**
+	 * Handles player movement upon keyboard input
+	 * 
+	 * @param direction
+	 * @param player
+	 */
 	private void movePlayer(int direction, Player player) {
 		// A callable method so we can repaint during animation
 		PlayerAnimator aniUp = null;
@@ -474,11 +452,25 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		MovePlayer.movePlayer(direction, player, aniUp);
 	}
 	
-	public void changeMapOccupation(int playerX, int playerY, int playerIdx, Boolean occupied) {
+	/**
+	 * Update a map square to indicate whether it contains a player and if so
+	 * what is the player's ID
+	 * 
+	 * @param playerX
+	 * @param playerY
+	 * @param playerID
+	 * @param occupied
+	 */
+	public void changeMapOccupation(int playerX, int playerY, int playerID, Boolean occupied) {
 		mapSquares[playerY][playerX].isOccupied = occupied;
-		mapSquares[playerY][playerX].playerIdx = occupied ? playerIdx : -1;
+		mapSquares[playerY][playerX].playerIdx = occupied ? playerID : -1;
 	}
 	
+	/**
+	 * A callable that is used to update and redraw the level
+	 * during player animation
+	 *
+	 */
 	public class PlayerAnimator implements Callable<Void> {
 		private Player player = null;
 		
@@ -502,6 +494,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}		
 	}
 	
+	/**
+	 * A callable used to redraw animated textures during animation
+	 *
+	 */
 	public class TerrainAnimator implements Callable<Void> {
 		
 		@Override
@@ -512,6 +508,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}		
 	}
 	
+	/**
+	 * Update the location of the player - called after completion
+	 * of the movement animation
+	 *  
+	 * @param player
+	 */
 	private void updatePlayerLocation(Player player) {
 		if (player.isJumping) {
 			// If we were jumping, we are done now
@@ -526,6 +528,14 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		player.y = newLocation.y;
 	}
 	
+	/**
+	 * Figure out where the player would end up if they moved in
+	 * a direction
+	 * 
+	 * @param player
+	 * @param direction
+	 * @return
+	 */
 	private Point getNewPlayerPosition(Player player, int direction){
 		Point newPoint = new Point(player.x, player.y);
 		switch(direction) {
@@ -535,6 +545,37 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			case Player.Move.DOWN:	newPoint.y++;	break;
 		}
 		return newPoint;
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (AI_MODE) return;
+		if (!heldKeys.contains(e.getKeyCode())) {
+			heldKeys.add(new Integer(e.getKeyCode()));		
+		}
+		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+    		player.speed = Player.RUNNING;			
+		}
+    	if (player.allowedToMove) {
+	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
+	        	movePlayer(Player.Move.RIGHT, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
+	        	movePlayer(Player.Move.UP, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
+	        	movePlayer(Player.Move.LEFT, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
+	        	movePlayer(Player.Move.DOWN, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_SPACE)) {
+	        	player.isJumping = true;
+	        	movePlayer(player.direction, player);
+	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
+	        	int modVal = Player.Move.RIGHT + 1;
+	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
+	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
+	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
+	        }
+	        repaint();
+		}
 	}
 
 	@Override

@@ -4,7 +4,7 @@ The full project can be found here: https://github.com/jordanywhite/SquaresInter
 
 ## Instructions
 * To test out the current version, compile and run the file: DirectoryParser.java
-* This will place a file called Textures.xml in the res/images/ folder
+* This will place a file called Textures.xml in the res/images/ folder (you may have to refresh the directory)
 * Copy this generated file into res/xml/ and overwrite any existing version
 * Now compile and run SquintMainWindow.java
 * Enjoy!

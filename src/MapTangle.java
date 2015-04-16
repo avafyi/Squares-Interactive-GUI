@@ -1,4 +1,11 @@
 
+/**
+ * 
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+
 public class MapTangle {
 		// Dimensions of the rectangle floor
 		public final int startRow;

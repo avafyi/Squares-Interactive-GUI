@@ -4,11 +4,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.TimerTask;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -484,6 +482,8 @@ public class Map {
 	}
 	
 	/**
+	 * IN PROGRESS
+	 * 
 	 * The idea behind generateObject is that it will be given a directory "objectGroup"
 	 * and inside that directory will be a collection of image files with the prefix 
 	 * "component-". 

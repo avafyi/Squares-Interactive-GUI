@@ -3,33 +3,43 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 
 /**
- * 
+ * The purpose of this class is to provide a higher level view of map generation.
+ * At some point this class file will gather map parameters from resource files,
+ * but for now everything is done from here for testing purposes. 
  * 
  * @author Caleb Piekstra
  *
  */
 
 public class MapEditor extends Map {	
-
-	public MapEditor(ResourceLoader resLoader, int map_id, int map_width, int map_height, int num_layers, int squareDim) {
-		// Create the map
-		super(resLoader, map_id, map_width, map_height, num_layers, squareDim);		
-		
-		// TEMPORARY - these should be called by the maker of the map editor, not by the map editor
-		// BETTER - these should be read in from a file, like an xml with attributes defining the creation
-		// 		of each part of the map
-//		makeRoom(3,5,14,16,"wood_floor","walls", "shadows");
-//		makeOutside(0,0,19,19, "grass","","", new SquintMainWindow.TerrainAnimator());
-//		makeRoom(3,5,14,16,"wood_floor","walls_dmg", "shadows");		
-	} 
 	
 	/**
-	 * MAP EDITING
+	 * Creates the map
+	 * 
+	 * @param resLoader		Where to look for texture files
+	 * @param map_id		The level ID
+	 * @param map_width		The pixel width of the map
+	 * @param map_height	The pixel height of the map
+	 * @param num_layers	The number of texture layers (i.e. terrain, shading)
+	 * @param squareDim		The pixel dimension of a map square
 	 */
+	public MapEditor(ResourceLoader resLoader, int map_id, int map_width, int map_height, int num_layers, int squareDim) {
+		// Create the super map!
+		super(resLoader, map_id, map_width, map_height, num_layers, squareDim);			
+	} 
+	
+	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	MAP EDITING
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
 	
 	public void makeRoom(int sr, int sc, int er, int ec, String floorGroup, String wallGroup, String shadowGroup) {
 		
-		// Create our rectangular-room dimension calculator
+		// Create an object that determines a grid mapping of the room's features
 		MapTangle mt = new MapTangle(sr, sc, er, ec);
 		// Add the floor
 		addTerrain(mt.startRow, mt.startCol, mt.endRow, mt.endCol, floorGroup, new Seed(15,4));
@@ -38,15 +48,15 @@ public class MapEditor extends Map {
 		addWall(mt.walls.bottom.row, mt.walls.bottom.col, mt.walls.bottom.end, new Wall(Wall.BOTTOM), wallGroup, new Ratio(5, 2));
 		addWall(mt.walls.right.row, mt.walls.right.col, mt.walls.right.end, new Wall(Wall.RIGHT), wallGroup, new Ratio(5, 2));
 		addWall(mt.walls.left.row, mt.walls.left.col, mt.walls.left.end, new Wall(Wall.LEFT), wallGroup, new Ratio(5, 2));
-		// Add corners to the room
+		// Add wall corners to the room
 		addCorner(mt.corners.topRight.row, mt.corners.topRight.col, new Corner(Corner.TOP_RIGHT), new CornerSize(CornerSize.LARGE), wallGroup);
 		addCorner(mt.corners.topLeft.row, mt.corners.topLeft.col, new Corner(Corner.TOP_LEFT), new CornerSize(CornerSize.LARGE), wallGroup);
 		addCorner(mt.corners.botLeft.row, mt.corners.botLeft.col, new Corner(Corner.BOT_LEFT), new CornerSize(CornerSize.SMALL), wallGroup);
 		addCorner(mt.corners.botRight.row, mt.corners.botRight.col, new Corner(Corner.BOT_RIGHT), new CornerSize(CornerSize.SMALL), wallGroup);
-		// Add shadows lines to the room
+		// Add wall shadows to the room
 		addWallShadow(mt.wallShadows.top.row, mt.wallShadows.top.col, mt.wallShadows.top.end, new WallShadow(WallShadow.TOP), shadowGroup);
 		addWallShadow(mt.wallShadows.left.row, mt.wallShadows.left.col, mt.wallShadows.left.end, new WallShadow(WallShadow.LEFT), shadowGroup);
-		// Add shadow corners to the room
+		// Add wall corner shadows to the room
 		addCornerShadow(mt.cornerShadows.topLeft.row, mt.cornerShadows.topLeft.col, new CornerShadow(CornerShadow.TOP_LEFT), shadowGroup);
 		// Set which textures are considered to be SOLID map squares
 		setSolids(new String[]{"walls"}, new String[]{"corner-q2-small.png"});		
@@ -58,9 +68,8 @@ public class MapEditor extends Map {
 		addAnimatedTerrain(12, 1, 18, 7, animatedTerrainGroup, terrainAnimationDelay, callableAnimator);
 		addPathway(new Point[]{new Point(18, 0), new Point(18, 10)}, 2, "grass", new Seed(10,0));
 		
+		// TODO - not ready yet
 		addObject(1,1,"house_1");
-		
-		
 		
 		// This must be done AFTER adding ALL animated textures
 		setAnimatedSquares();

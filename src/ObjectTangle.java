@@ -1,11 +1,16 @@
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
-
+/**
+ * IN PROGRESS
+ * 
+ * @author Caleb Piekstra
+ *
+ */
+	
 public class ObjectTangle {
 	
 	// These hold the logical values specified by the component names
