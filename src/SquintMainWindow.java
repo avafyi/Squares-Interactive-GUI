@@ -59,7 +59,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int MAP_LEVEL = 0;	// Currently unimplemented
 	
 	// Toggle between AI mode and client mode
-	private final boolean AI_MODE = true;					
+	private final boolean AI_MODE = false;					
 	// The list of ai players for triggering movements
 //	private Player[] ai_players;					
 	// The number of AI requested
@@ -184,26 +184,16 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void initAI() {
-		// Initialize the array of players so they can all be drawn
-//		ai_players = new Player[NUM_AI_PLAYERS];			
 		// Go through and create the specified number of players
 		for (int ai = 0; ai < NUM_AI_PLAYERS; ai++) 
 		{				
 			// Each AI is created in a random available location with a random avatar, facing a random direction
 			Player aiPlayer = new Player(avatars.getRandomAvatar(), mapSquares, (int)(Math.random()*4), true, num_players++);
+			// If too many AI players were requested and there is no room, it will have a null avatar
+			if (aiPlayer.avatar == null) {
+				break;
+			}
 			players.put(aiPlayer.id, aiPlayer);
-			
-			// in the case that there was no more room for players, the player would have a null avatar
-			// if the player was not successfully created, then too many AI players were requested and
-			// the array of ai_players should be resized, and the loop exited
-//			if (aiPlayer.avatar == null) 
-//			{
-//				Player[] newAI_players = new Player[ai];
-//				System.arraycopy(ai_players, 0, newAI_players, 0, ai);
-//				ai_players = newAI_players;
-//				break;
-//			}
-//			Player currAI = ai_players[ai];
 			changeMapOccupation(aiPlayer.x, aiPlayer.y, aiPlayer.id, true);					
 		}
 		// Configure a timer to automatically move the AI players
@@ -471,18 +461,10 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	 * @param modeIsAI	whether or not the program is running in ai mode or user-controlled mode
 	 */
 	private void drawAvatars(Graphics2D g2d, boolean modeIsAI) {
-		// If the program is running in AI mode, draw each of the players in the list of AIs
-		// Otherwise just draw the single, user-controlled player
-//		if (modeIsAI) {
-//			for(Player player : ai_players) {
-//				drawPlayer(player, g2d);
-//			}
-//		} else {
-		    Iterator<Player> playerIterator = players.values().iterator();
-		    while (playerIterator.hasNext()) {
-				drawPlayer(playerIterator.next(), g2d);	// Draw the player
-//		        playerIterator.remove(); // avoids a ConcurrentModificationException
-//		    }
+		// Draw each of the players in the list of players
+	    Iterator<Player> playerIterator = players.values().iterator();
+	    while (playerIterator.hasNext()) {
+			drawPlayer(playerIterator.next(), g2d);	// Draw the player
 		}
 	}
 
@@ -703,45 +685,35 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			heldKeys.add(new Integer(e.getKeyCode()));		
 		}
 		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
-    		player.speed = Player.RUNNING;			
+    		player.speed = Player.RUNNING;	
 		}
     	if (player.allowedToMove) {
     		int moveDirection = -1;
 	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
-//	        	movePlayer(Player.Move.RIGHT, player);
 	        	moveDirection = Player.Move.RIGHT;
 	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
-//	        	movePlayer(Player.Move.UP, player);
 	        	moveDirection = Player.Move.UP;
 	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
-//	        	movePlayer(Player.Move.LEFT, player);
 	        	moveDirection = Player.Move.LEFT;
 	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
-//	        	movePlayer(Player.Move.DOWN, player);
 	        	moveDirection = Player.Move.DOWN;
 	        } else if(heldKeys.contains(KeyEvent.VK_SPACE)) {
 	        	player.isJumping = true;
-//	        	movePlayer(player.direction, player);
 	        	moveDirection = player.direction;
 	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
 	        	int modVal = Player.Move.RIGHT + 1;
-//	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
 	        	moveDirection = ((((player.direction-1) % modVal) + modVal) % modVal);
 	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
-//	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
 	        	moveDirection = (player.direction + 1) % (Player.Move.RIGHT + 1);
 	        }
 	        // Check if we are allowed to move
-        	if (host.lookIPressedSomethingCanIMove(moveDirection, player.id)) {
-        		// Let's move!
-        		// Simulate data being received from the host
+        	if (moveDirection != -1 && host.lookIPressedSomethingCanIMove(moveDirection, player.id)) {
+        		// Simulate move data being received from the host
         		try {
 					receivedDataBuffer.put(new Packet(moveDirection, player.id, Packet.PLAYER_DATA_FLAG));
 				} catch (InterruptedException e1) {
 					System.out.println("Couldn't simulate getting data from host");
-//					e1.printStackTrace();
 				}
-//        		movePlayer(moveDirection, player);
         		// Update our GUI
     	        repaint();        		
         	}
