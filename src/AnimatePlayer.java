@@ -58,8 +58,8 @@ public class AnimatePlayer {
 			player.allowedToMove = true; 
 			
 			// Kill the animation timer by canceling the handler
-			animationHandlers.get(player.idx).cancel(true);
-			animationHandlers.remove(player.idx);
+			animationHandlers.get(player.id).cancel(true);
+			animationHandlers.remove(player.id);
 			
 			// Update the display			
 			try {

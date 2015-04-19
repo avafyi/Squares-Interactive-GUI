@@ -16,10 +16,14 @@ import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.GrayFilter;
@@ -89,10 +93,19 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	
 	// Texture Groups for the avatars
 	AvatarGroup avatars = null;
+	
+	// TEMP CLIENT-SERVER STUFF
+	// The "server" (not really)
+	PretendServer host = null;
+	// The "players connected to the server" (not really)
+	Hashtable<Integer, Player> players = null;
+	// The thread that waits for data from the host and processes it
+	Thread receiverThread = null;
+	// END TEMP CLIENT-SERVER STUFF
 
 	/** Constructor to setup the GUI components */
 	public SquintMainWindow() 
-	{		
+	{				
 		// Create a resource loader so we can get textures
 		resLoad = new ResourceLoader();		
 		// Create the level's map editor
@@ -123,15 +136,41 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		} else {
 			// Create a new player and update the map with it's location
 			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.Move.DOWN, true, ++num_players);			
-			changeMapOccupation(player.x, player.y, player.idx, true);			
-		}		
+			changeMapOccupation(player.x, player.y, player.id, true);			
+		}	
+		
+		// TEMP CLIENT-SERVER STUFF
+		// Create a copy of the map squares 
+		MapSquare[][] squares = new MapSquare[mapSquares.length][mapSquares[0].length];
+		for (int row = 0; row < mapSquares.length; row++) {
+			for (int col = 0; col < mapSquares[row].length; col++) {
+				MapSquare original = mapSquares[row][col];
+				squares[row][col] = new MapSquare(original.sqType, original.isOccupied, original.playerId, row, col);
+			}
+		}
+		// Set up the hashtable of players
+		players = new Hashtable<Integer, Player>();
+		// add the only player in existence
+		players.put(player.id, player);
+		Player[] playersArr = new Player[players.size()];
+		playersArr[0] = players.get(player.id);
+//		for (int playerId = 0; playerId < players.size(); playerId++) {
+//			playersArr[playerId] = players.get(playerId);
+//		}
+		// Init the server "host" with our copy of the map and an array of the players in the map
+		host = new PretendServer(squares, playersArr);
+		// Create a receiver thread that waits for data from the host
+		receiverThread = new Thread(new Receiver());
+		// Start the receiver
+		receiverThread.start();
+		// END TEMP CLIENT-SERVER STUFF
 	}
 	
 	private void editLevel(MapEditor level) {
 		// This is the prototype ROOM level
-//		level.makeRoom(3,5,14,16,"wood_floor","walls", "shadows");
+		level.makeRoom(6,3,14,16,"wood_floor","walls", "shadows");
 		// This is the prototype OUTSIDE level
-		level.makeOutside(0,0,19,19, "grass","water",TERRAIN_ANIMATION_DELAY, "", "", new TerrainAnimator());
+//		level.makeOutside(0,0,19,19, "grass","water",TERRAIN_ANIMATION_DELAY, "", "", new TerrainAnimator());
 	}
 	
 	private void initAI() {
@@ -154,7 +193,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				break;
 			}
 			Player currAI = ai_players[ai];
-			changeMapOccupation(currAI.x, currAI.y, currAI.idx, true);					
+			changeMapOccupation(currAI.x, currAI.y, currAI.id, true);					
 		}
 		// Configure a timer to automatically move the AI players
 		Timer autoMoveTimer = new Timer();
@@ -170,6 +209,196 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				}				
 			}		
 		}, 2000, AI_MOVE_DELAY);
+	}
+
+	/**
+	 * Set up the client window
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		// Run GUI codes in the Event-Dispatching thread for thread safety
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run() {
+				JFrame frame = new JFrame(TITLE);
+				frame.setContentPane(new SquintMainWindow());
+				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				frame.setResizable(false);
+				frame.pack();             // "this" JFrame packs its components
+				frame.setLocationRelativeTo(null); // center the application window
+				frame.setVisible(true);            // show it
+			}
+		});
+	}
+	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	Player Movement / Location Updates
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
+	
+	// TEMP CLIENT-SERVER STUFF
+	public final class Packet {
+		public final int moveDirection;
+		public final int playerId;
+		public final int flags;
+		
+		public static final int PLAYER_DATA_FLAG = 0x01;
+		
+		public Packet(int direction, int playerId, int flags) {
+			this.flags = flags;
+			moveDirection = direction;
+			this.playerId = playerId;			
+		}
+	}	
+	public BlockingQueue<Packet> receivedDataBuffer = new ArrayBlockingQueue<Packet>(100);	
+	public class Receiver implements Runnable {
+		
+		public final int POLL_TIMEOUT = 60;
+		
+		public Receiver() {	
+			
+		}
+		
+		@Override
+		public void run() {
+			while (true) {				
+				System.out.println("WAIT: Waiting for data from the host...");
+				Packet data = null;
+				try {
+					// Sit here and wait for data for at most POLL_TIMEOUT time
+					data = receivedDataBuffer.poll(POLL_TIMEOUT, TimeUnit.MINUTES);
+				} catch (InterruptedException e) {
+					System.out.println("Error in receive buffer");
+//					e.printStackTrace();
+				}
+				// If there is no data, try again
+				if (data == null) {
+					System.out.println("TIMEOUT: Did not receive any data in " + POLL_TIMEOUT + " minutes. Closing connection.");
+					// not really closing the connection, but kill the receiver
+					return;
+				}
+				System.out.println("SUCCESS: Data received!");
+				// If we have movement data, it's time to move
+				if ((data.flags & Packet.PLAYER_DATA_FLAG) == Packet.PLAYER_DATA_FLAG) {
+					movePlayer(data.moveDirection, players.get(data.playerId));				
+				}
+			}
+		}		
+	}
+	// END TEMP CLIENT-SERVER STUFF
+	
+	/**
+	 * Handles player movement upon keyboard input
+	 * 
+	 * @param direction
+	 * @param player
+	 */
+	public void movePlayer(int direction, Player player) {
+		// A callable method so we can repaint during animation
+		PlayerAnimator aniUp = null;
+		
+		// Check if we are simply changing direction or animating
+		if (player.direction == direction) {
+			// See if we are moving instead of jumping
+			if (!player.isJumping) {
+				// Holds the destination location of the player
+				Point newSquareLoc = getNewPlayerPosition(player, direction);		
+				// Holds the map square at the destination point
+				MapSquare destinationSquare = level.getMapSquare(newSquareLoc);
+				// Make sure there is a square at the destination
+				if (destinationSquare == null) {
+					return;
+				}
+				// Ask for permission to move - host must claim the destination map square if client allowed to move
+				if(!MoveRequest.canIMoveHere(destinationSquare, newSquareLoc, level.mapCols, level.mapRows)) {
+					return;
+				}
+				// Get the location where the player will be located but don't actually 
+				// update the player's location - the old one needs to be maintained for
+				// the duration of the movement animation
+				// Update the map to show that the destination square has been claimed
+				changeMapOccupation(newSquareLoc.x, newSquareLoc.y, player.id, true);
+			}			
+			// Move the player
+			aniUp = new PlayerAnimator();
+			aniUp.setPlayer(player);
+		}
+		MovePlayer.movePlayer(direction, player, aniUp);
+	}
+	
+	/**
+	 * Update a map square to indicate whether it contains a player and if so
+	 * what is the player's ID
+	 * 
+	 * @param playerX
+	 * @param playerY
+	 * @param playerID
+	 * @param occupied
+	 */
+	public void changeMapOccupation(int playerX, int playerY, int playerID, Boolean occupied) {
+		mapSquares[playerY][playerX].isOccupied = occupied;
+		mapSquares[playerY][playerX].playerId = occupied ? playerID : -1;
+	}
+	
+	/**
+	 * Update the location of the player - called after completion
+	 * of the movement animation
+	 *  
+	 * @param player
+	 */
+	private void updatePlayerLocation(Player player) {
+		if (player.isJumping) {
+			// If we were jumping, we are done now
+			player.isJumping = false;
+			return;
+		}
+		// Update the map to indicate that the player is no longer at it's old location
+		changeMapOccupation(player.x, player.y, player.id, false);
+		// Animation has been completed at this point, update the player's location
+		Point newLocation = getNewPlayerPosition(player, player.direction);
+		player.x = newLocation.x;
+		player.y = newLocation.y;
+	}
+	
+	/**
+	 * Figure out where the player would end up if they moved in
+	 * a direction
+	 * 
+	 * @param player
+	 * @param direction
+	 * @return
+	 */
+	private Point getNewPlayerPosition(Player player, int direction){
+		Point newPoint = new Point(player.x, player.y);
+		switch(direction) {
+			case Player.Move.RIGHT: newPoint.x++;	break;
+			case Player.Move.UP:	newPoint.y--;	break;
+			case Player.Move.LEFT:	newPoint.x--;	break;
+			case Player.Move.DOWN:	newPoint.y++;	break;
+		}
+		return newPoint;
+	}
+	
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	GUI Drawing
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
+	
+	@Override
+	public void paintComponent(Graphics g) {
+		super.paintComponent(g);  
+		// paint background
+		drawMap(g);
+		// Update the animated textures
+		drawAnimatedTerrain(g);
+		// Update the avatar textures
+		drawAvatars((Graphics2D) g, AI_MODE);
 	}
 	
 	/**
@@ -191,18 +420,6 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		g2.dispose();
 		return bImg;
 	}
-
-	
-	@Override
-	public void paintComponent(Graphics g) {
-		super.paintComponent(g);  
-		// paint background
-		drawMap(g);
-		// Update the animated textures
-		drawAnimatedTerrain(g);
-		// Update the avatar textures
-		drawAvatars((Graphics2D) g, AI_MODE);
-	}
 	
 	/**
 	 * Updates the application window to display the active map static background
@@ -218,6 +435,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	}
 	
 	private void drawAnimatedTerrain(Graphics g) {
+		if (animatedSquares == null) return;
 		for (MapSquare animatedSquare : animatedSquares) {
 			drawImageToGrid(level.map.animator.getCurrentPhaseTexture().textureFile, animatedSquare.col * MAP_DIM, animatedSquare.row * MAP_DIM, g, false, false);
 		}		
@@ -392,79 +610,14 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			drawImageToGrid(t.textureFile, player_x, player_y - MAP_DIM/2, g, false, true);
 		}
 	}
-
-	/**
-	 * Set up the client window
-	 * 
-	 * @param args
-	 */
-	public static void main(String[] args) {
-		// Run GUI codes in the Event-Dispatching thread for thread safety
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				JFrame frame = new JFrame(TITLE);
-				frame.setContentPane(new SquintMainWindow());
-				frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-				frame.setResizable(false);
-				frame.pack();             // "this" JFrame packs its components
-				frame.setLocationRelativeTo(null); // center the application window
-				frame.setVisible(true);            // show it
-			}
-		});
-	}
 	
-	/**
-	 * Handles player movement upon keyboard input
-	 * 
-	 * @param direction
-	 * @param player
-	 */
-	private void movePlayer(int direction, Player player) {
-		// A callable method so we can repaint during animation
-		PlayerAnimator aniUp = null;
-		
-		// Check if we are simply changing direction or animating
-		if (player.direction == direction) {
-			// See if we are moving instead of jumping
-			if (!player.isJumping) {
-				// Holds the destination location of the player
-				Point newSquareLoc = getNewPlayerPosition(player, direction);		
-				// Holds the map square at the destination point
-				MapSquare destinationSquare = level.getMapSquare(newSquareLoc);
-				// Make sure there is a square at the destination
-				if (destinationSquare == null) {
-					return;
-				}
-				// Ask for permission to move - host must claim the destination map square if client allowed to move
-				if(!MoveRequest.canIMoveHere(destinationSquare, newSquareLoc, level.mapCols, level.mapRows)) {
-					return;
-				}
-				// Get the location where the player will be located but don't actually 
-				// update the player's location - the old one needs to be maintained for
-				// the duration of the movement animation
-				// Update the map to show that the destination square has been claimed
-				changeMapOccupation(newSquareLoc.x, newSquareLoc.y, player.idx, true);
-			}			
-			// Move the player
-			aniUp = new PlayerAnimator();
-			aniUp.setPlayer(player);
-		}
-		MovePlayer.movePlayer(direction, player, aniUp);
-	}
-	
-	/**
-	 * Update a map square to indicate whether it contains a player and if so
-	 * what is the player's ID
-	 * 
-	 * @param playerX
-	 * @param playerY
-	 * @param playerID
-	 * @param occupied
-	 */
-	public void changeMapOccupation(int playerX, int playerY, int playerID, Boolean occupied) {
-		mapSquares[playerY][playerX].isOccupied = occupied;
-		mapSquares[playerY][playerX].playerIdx = occupied ? playerID : -1;
-	}
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	Animation Handlers
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
 	
 	/**
 	 * A callable that is used to update and redraw the level
@@ -508,44 +661,13 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		}		
 	}
 	
-	/**
-	 * Update the location of the player - called after completion
-	 * of the movement animation
-	 *  
-	 * @param player
-	 */
-	private void updatePlayerLocation(Player player) {
-		if (player.isJumping) {
-			// If we were jumping, we are done now
-			player.isJumping = false;
-			return;
-		}
-		// Update the map to indicate that the player is no longer at it's old location
-		changeMapOccupation(player.x, player.y, player.idx, false);
-		// Animation has been completed at this point, update the player's location
-		Point newLocation = getNewPlayerPosition(player, player.direction);
-		player.x = newLocation.x;
-		player.y = newLocation.y;
-	}
-	
-	/**
-	 * Figure out where the player would end up if they moved in
-	 * a direction
-	 * 
-	 * @param player
-	 * @param direction
-	 * @return
-	 */
-	private Point getNewPlayerPosition(Player player, int direction){
-		Point newPoint = new Point(player.x, player.y);
-		switch(direction) {
-			case Player.Move.RIGHT: newPoint.x++;	break;
-			case Player.Move.UP:	newPoint.y--;	break;
-			case Player.Move.LEFT:	newPoint.x--;	break;
-			case Player.Move.DOWN:	newPoint.y++;	break;
-		}
-		return newPoint;
-	}
+	/**___________________________________________________________________________________________**\
+   /  / 
+  /  |  
+ < | |	Keyboard Events
+  \  |
+   \  \___________________________________________________________________________________________
+	\**                                                                                           **/	
 
 	@Override
 	public void keyPressed(KeyEvent e) {
@@ -557,24 +679,45 @@ public class SquintMainWindow extends JPanel implements KeyListener {
     		player.speed = Player.RUNNING;			
 		}
     	if (player.allowedToMove) {
+    		int moveDirection = -1;
 	        if(heldKeys.contains(KeyEvent.VK_D) || heldKeys.contains(KeyEvent.VK_RIGHT)) {
-	        	movePlayer(Player.Move.RIGHT, player);
+//	        	movePlayer(Player.Move.RIGHT, player);
+	        	moveDirection = Player.Move.RIGHT;
 	        } else if(heldKeys.contains(KeyEvent.VK_W) || heldKeys.contains(KeyEvent.VK_UP)) {
-	        	movePlayer(Player.Move.UP, player);
+//	        	movePlayer(Player.Move.UP, player);
+	        	moveDirection = Player.Move.UP;
 	        } else if(heldKeys.contains(KeyEvent.VK_A) || heldKeys.contains(KeyEvent.VK_LEFT)) {
-	        	movePlayer(Player.Move.LEFT, player);
+//	        	movePlayer(Player.Move.LEFT, player);
+	        	moveDirection = Player.Move.LEFT;
 	        } else if(heldKeys.contains(KeyEvent.VK_S) || heldKeys.contains(KeyEvent.VK_DOWN)) {
-	        	movePlayer(Player.Move.DOWN, player);
+//	        	movePlayer(Player.Move.DOWN, player);
+	        	moveDirection = Player.Move.DOWN;
 	        } else if(heldKeys.contains(KeyEvent.VK_SPACE)) {
 	        	player.isJumping = true;
-	        	movePlayer(player.direction, player);
+//	        	movePlayer(player.direction, player);
+	        	moveDirection = player.direction;
 	        } else if(heldKeys.contains(KeyEvent.VK_Q)) {
 	        	int modVal = Player.Move.RIGHT + 1;
-	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
+//	        	player.direction = ((((player.direction-1) % modVal) + modVal) % modVal);
+	        	moveDirection = ((((player.direction-1) % modVal) + modVal) % modVal);
 	        } else if(heldKeys.contains(KeyEvent.VK_E)) {
-	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
+//	        	player.direction = (player.direction + 1) % (Player.Move.RIGHT + 1);
+	        	moveDirection = (player.direction + 1) % (Player.Move.RIGHT + 1);
 	        }
-	        repaint();
+	        // Check if we are allowed to move
+        	if (host.lookIPressedSomethingCanIMove(moveDirection, player.id)) {
+        		// Let's move!
+        		// Simulate data being received from the host
+        		try {
+					receivedDataBuffer.put(new Packet(moveDirection, player.id, Packet.PLAYER_DATA_FLAG));
+				} catch (InterruptedException e1) {
+					System.out.println("Couldn't simulate getting data from host");
+//					e1.printStackTrace();
+				}
+//        		movePlayer(moveDirection, player);
+        		// Update our GUI
+    	        repaint();        		
+        	}
 		}
 	}
 

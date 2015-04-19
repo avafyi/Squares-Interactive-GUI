@@ -35,7 +35,7 @@ public class Player {
 	public boolean allowedToMove;
 	public int animatePhase;
 	private Timer moveTimer = null;
-	public int idx;
+	public int id;
 	public int speed;
 	public boolean inAnimationPhase;
 	public boolean isJumping;
@@ -84,7 +84,7 @@ public class Player {
 		}
 		animatePhase = 0;
 		speed = WALKING;
-		idx = playerIdx;		
+		id = playerIdx;		
 		allowedToMove = canIMove;
 		inAnimationPhase = false;
 		isJumping = false;

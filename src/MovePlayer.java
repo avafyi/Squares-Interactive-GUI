@@ -37,7 +37,7 @@ public class MovePlayer extends AnimatePlayer {
 					new Animators.MoveAnimation(player, updateDisplayCallable),
 					0, delay, TimeUnit.MILLISECONDS);
 			// Add our handler to the list of handlers to be handled
-		    animationHandlers.put(player.idx, taskHandler);
+		    animationHandlers.put(player.id, taskHandler);
 		} else {
 			// If not animating, the player is allowed to move
 			player.allowedToMove = true;
