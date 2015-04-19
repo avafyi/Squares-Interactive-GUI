@@ -16,7 +16,8 @@ import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -58,11 +59,11 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	public static final int MAP_LEVEL = 0;	// Currently unimplemented
 	
 	// Toggle between AI mode and client mode
-	private final boolean AI_MODE = false;					
+	private final boolean AI_MODE = true;					
 	// The list of ai players for triggering movements
-	private Player[] ai_players;					
+//	private Player[] ai_players;					
 	// The number of AI requested
-	private static final int NUM_AI_PLAYERS = 1972;	
+	private static final int NUM_AI_PLAYERS = 4;	
 	// The delay in ms between the AI movements
 	public static final int AI_MOVE_DELAY = 100; 		
 	// The delay in ms between terrain updates
@@ -98,7 +99,7 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	// The "server" (not really)
 	PretendServer host = null;
 	// The "players connected to the server" (not really)
-	Hashtable<Integer, Player> players = null;
+	HashMap<Integer, Player> players = null;
 	// The thread that waits for data from the host and processes it
 	Thread receiverThread = null;
 	// END TEMP CLIENT-SERVER STUFF
@@ -128,15 +129,17 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		addKeyListener(this);
         setFocusable(true);
         setFocusTraversalKeysEnabled(false);
+        
+		// Set up the hashtable of players
+		players = new HashMap<Integer, Player>();
 
         // Determine what mode to start the client in
 		if (AI_MODE) {
-			// Set up the AI and lock out user input
+			// Set up the AI players and lock out user input
 			initAI();
 		} else {
-			// Create a new player and update the map with it's location
-			player = new Player(avatars.getAvatar("glasses"), mapSquares, Player.Move.DOWN, true, ++num_players);			
-			changeMapOccupation(player.x, player.y, player.id, true);			
+			// Create a new player
+			player = createPlayer(avatars.getAvatar("glasses"));	
 		}	
 		
 		// TEMP CLIENT-SERVER STUFF
@@ -148,15 +151,12 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 				squares[row][col] = new MapSquare(original.sqType, original.isOccupied, original.playerId, row, col);
 			}
 		}
-		// Set up the hashtable of players
-		players = new Hashtable<Integer, Player>();
-		// add the only player in existence
-		players.put(player.id, player);
 		Player[] playersArr = new Player[players.size()];
-		playersArr[0] = players.get(player.id);
-//		for (int playerId = 0; playerId < players.size(); playerId++) {
-//			playersArr[playerId] = players.get(playerId);
-//		}
+		int playerIdx = 0;
+	    Iterator<Player> playerIterator = players.values().iterator();
+	    while (playerIterator.hasNext()) {
+	    	playersArr[playerIdx++] = playerIterator.next();
+	    }	
 		// Init the server "host" with our copy of the map and an array of the players in the map
 		host = new PretendServer(squares, playersArr);
 		// Create a receiver thread that waits for data from the host
@@ -164,6 +164,16 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 		// Start the receiver
 		receiverThread.start();
 		// END TEMP CLIENT-SERVER STUFF
+	}
+	
+	private Player createPlayer(Avatar avatar) {
+		Player player = new Player(avatar, mapSquares, Player.Move.DOWN, true, ++num_players);		
+		// Add the player to the list of players
+		players.put(player.id, player);	
+		// Update the map to indicate the player "spawning"
+		changeMapOccupation(player.x, player.y, player.id, true);
+		// Return a reference to the player if needed
+		return player;
 	}
 	
 	private void editLevel(MapEditor level) {
@@ -175,25 +185,26 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	
 	private void initAI() {
 		// Initialize the array of players so they can all be drawn
-		ai_players = new Player[NUM_AI_PLAYERS];			
+//		ai_players = new Player[NUM_AI_PLAYERS];			
 		// Go through and create the specified number of players
 		for (int ai = 0; ai < NUM_AI_PLAYERS; ai++) 
 		{				
 			// Each AI is created in a random available location with a random avatar, facing a random direction
-			ai_players[ai] = new Player(avatars.getRandomAvatar(), mapSquares, (int)(Math.random()*4), true, num_players++);
+			Player aiPlayer = new Player(avatars.getRandomAvatar(), mapSquares, (int)(Math.random()*4), true, num_players++);
+			players.put(aiPlayer.id, aiPlayer);
 			
 			// in the case that there was no more room for players, the player would have a null avatar
 			// if the player was not successfully created, then too many AI players were requested and
 			// the array of ai_players should be resized, and the loop exited
-			if (ai_players[ai].avatar == null) 
-			{
-				Player[] newAI_players = new Player[ai];
-				System.arraycopy(ai_players, 0, newAI_players, 0, ai);
-				ai_players = newAI_players;
-				break;
-			}
-			Player currAI = ai_players[ai];
-			changeMapOccupation(currAI.x, currAI.y, currAI.id, true);					
+//			if (aiPlayer.avatar == null) 
+//			{
+//				Player[] newAI_players = new Player[ai];
+//				System.arraycopy(ai_players, 0, newAI_players, 0, ai);
+//				ai_players = newAI_players;
+//				break;
+//			}
+//			Player currAI = ai_players[ai];
+			changeMapOccupation(aiPlayer.x, aiPlayer.y, aiPlayer.id, true);					
 		}
 		// Configure a timer to automatically move the AI players
 		Timer autoMoveTimer = new Timer();
@@ -201,12 +212,24 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 			@Override
 			public void run() {
 				// Go through all ai players and make them move in a random direction
-				for(Player player : ai_players) {
+			    Iterator<Player> playerIterator = players.values().iterator();
+			    while (playerIterator.hasNext()) {
+			    	Player player = playerIterator.next();
+			    	int moveDirection = (int)(Math.random()*4);
 					if (player.allowedToMove) {
-						movePlayer((int)(Math.random()*4), player);	
+				        // Check if we are allowed to move
+			        	if (host.lookIPressedSomethingCanIMove(moveDirection, player.id)) {
+			        		// Let's move!
+			        		// Simulate data being received from the host
+			        		try {
+								receivedDataBuffer.put(new Packet(moveDirection, player.id, Packet.PLAYER_DATA_FLAG));
+							} catch (InterruptedException e1) {
+								System.out.println("Couldn't simulate getting data from host");
+							}
+			    	        repaint();        		
+			        	}
 					}
-					repaint();		
-				}				
+			    }			
 			}		
 		}, 2000, AI_MOVE_DELAY);
 	}
@@ -450,12 +473,16 @@ public class SquintMainWindow extends JPanel implements KeyListener {
 	private void drawAvatars(Graphics2D g2d, boolean modeIsAI) {
 		// If the program is running in AI mode, draw each of the players in the list of AIs
 		// Otherwise just draw the single, user-controlled player
-		if (modeIsAI) {
-			for(Player player : ai_players) {
-				drawPlayer(player, g2d);
-			}
-		} else {
-			drawPlayer(player, g2d);	// Draw the player
+//		if (modeIsAI) {
+//			for(Player player : ai_players) {
+//				drawPlayer(player, g2d);
+//			}
+//		} else {
+		    Iterator<Player> playerIterator = players.values().iterator();
+		    while (playerIterator.hasNext()) {
+				drawPlayer(playerIterator.next(), g2d);	// Draw the player
+//		        playerIterator.remove(); // avoids a ConcurrentModificationException
+//		    }
 		}
 	}
 

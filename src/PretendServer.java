@@ -4,7 +4,9 @@ import java.util.HashMap;
 
 public class PretendServer {
 	
+	// The server has a copy of the map
 	private MapSquare[][] map = null;
+	// The server knows about all the connected players
 	private HashMap<Integer, Player> players = null;
 	
 	public PretendServer(MapSquare[][] map, Player[] players) {
@@ -16,10 +18,43 @@ public class PretendServer {
 		}
 	}
 	
+	/**
+	 * Adds a new player to the hashmap of connected players
+	 * 
+	 * @param player	The new player that connected
+	 */
+	public void newPlayer(Player player) {
+		players.put(player.id, player);
+	}
+	
+	/**
+	 * Removes the player that disconnected
+	 * 
+	 * @param playerId	The ID of the player that disconnected
+	 */
+	public void removePlayer(int playerId) {
+		players.remove(playerId);
+	}
+	
+	/**
+	 * A client pressed a movement key and wants to know if it can move
+	 * 
+	 * @param moveDirection	The direction the player is trying to move
+	 * @param playerId		The ID of the player that wants to move
+	 * @return	Whether the player moved or not
+	 */
 	public boolean lookIPressedSomethingCanIMove(int moveDirection, int playerId) {
 		return isValidMove(moveDirection, playerId);
 	}
-	
+
+	/**
+	 * Determines if a move is valid based on the player's location and
+	 * the direction that the player is trying to move
+	 * 
+	 * @param moveDirection	The direction the player is trying to move
+	 * @param playerId		The player that is trying to move
+	 * @return	Whether or not the proposed move is valid
+	 */
 	public boolean isValidMove(int moveDirection, int playerId) {
 		// Check if the player is simply rotating in place
 		if (moveDirection != players.get(playerId).direction) {
@@ -40,12 +75,22 @@ public class PretendServer {
 		return false;
 	}
 	
+	/**
+	 * Update the map to indicate that a player has moved
+	 * 	Reset their previous square
+	 * 	Set their new square
+	 * 
+	 * @param destSquare	The square that the player moved to
+	 * @param playerId		The ID of the player that moved
+	 */
 	private void updateMap(MapSquare destSquare, int playerId) {
 		// First get the old map square and clear it
 		Player player = players.get(playerId);
 		MapSquare oldSquare = map[player.y][player.x];
+		// Reset the old square
 		oldSquare.isOccupied = false;
 		oldSquare.playerId = -1;
+		// Set the new square
 		destSquare.playerId = playerId;
 		destSquare.isOccupied = true;
 	}
