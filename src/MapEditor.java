@@ -69,7 +69,7 @@ public class MapEditor extends Map {
 		addPathway(new Point[]{new Point(18, 0), new Point(18, 10)}, 2, "grass", new Seed(10,0));
 		
 		// TODO - not ready yet
-		addObject(1,1,"house_1");
+		addObject(5,5,"table");
 		
 		// This must be done AFTER adding ALL animated textures
 		setAnimatedSquares();
